@@ -358,6 +358,7 @@ function Admin() {
                                                      <p><strong className="text-orange-400 w-24 inline-block">Lead:</strong> {team.name} ({team.registrationNumber})</p>
                                                      <p><strong className="text-orange-400 w-24 inline-block">Members:</strong> {team.teamMembers.map(m => m.name).join(', ')}</p>
                                                      <p><strong className="text-orange-400 w-24 inline-block">Game Score:</strong> {team.memoryGameScore ?? 'Not Played'}</p>
+                                                     <p><strong className="text-orange-400 w-24 inline-block">Number Puzzle:</strong> {team.numberPuzzleScore ?? 'Not Played'}</p>
                                                  </div>
                                              )}
                                          </div>

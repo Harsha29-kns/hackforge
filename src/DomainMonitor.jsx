@@ -1,4 +1,5 @@
 // DomainMonitor.js (a new component file, or add this inside Admin.js)
+import React, { useState } from "react";
 
 const DomainMonitor = ({ teams, domains, onResetDomains }) => {
     const [isLoading, setIsLoading] = useState(false);

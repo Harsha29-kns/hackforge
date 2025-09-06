@@ -5,6 +5,7 @@ import { io } from "socket.io-client";
 import "driver.js/dist/driver.css";
 import Modal from 'react-modal';
 import MemoryFlipGame from "./MemoryFlipGame"; //game file
+import NumberPuzzleGame from "./NumberPuzzleGame"; // Import the NumberPuzzleGame component
 
 // Import your images
 import lod from "/public/loading.gif";
@@ -311,10 +312,14 @@ function Teamdash() {
     const [pptData, setPptData] = useState(null);
     const [selectedSet, setSelectedSet] = useState(null);
     const [viewingQr, setViewingQr] = useState(null);
+    const [isNumberPuzzleModalOpen, setIsNumberPuzzleModalOpen] = useState(false); // ADD THIS
     const [isGameModalOpen, setIsGameModalOpen] = useState(false);
     const [isSubmittingGameScore, setIsSubmittingGameScore] = useState(false);
+    const [isSubmittingPuzzleScore, setIsSubmittingPuzzleScore] = useState(false); // ADD THIS
     const [isGameOpen, setIsGameOpen] = useState(false);
     const [gameOpenTime, setGameOpenTime] = useState(null);
+    const [isPuzzleOpen, setIsPuzzleOpen] = useState(false); // ADD THIS
+    const [puzzleOpenTime, setPuzzleOpenTime] = useState(null); // ADD THIS
 
     // +++ START: MODIFIED verify FUNCTION +++
     // This function now only handles the FIRST stage of login (HTTP).
@@ -450,10 +455,18 @@ function Teamdash() {
         socket.emit("getGameStatus");
 
         const timeUpdater = setInterval(() => {
-            setCurrentTime(new Date());
-            if (gameOpenTime && new Date() > new Date(gameOpenTime)) setIsGameOpen(true);
-            if (domainOpenTime && new Date() > new Date(domainOpenTime)) setDomainOpen(true);
-        }, 1000);
+        setCurrentTime(new Date());
+        if (gameOpenTime && new Date() > new Date(gameOpenTime)) {
+            setIsGameOpen(true);
+        }
+        // ADD THIS CHECK FOR THE PUZZLE GAME
+        if (puzzleOpenTime && new Date() > new Date(puzzleOpenTime)) {
+            setIsPuzzleOpen(true);
+        }
+        if (domainOpenTime && new Date() > new Date(domainOpenTime)) {
+            setDomainOpen(true);
+        }
+    }, 1000);
 
         const handleTeamUpdate = (updatedTeam) => {
             if (team && updatedTeam._id === team._id) {
@@ -503,6 +516,15 @@ function Teamdash() {
                 setIsGameOpen(true);
             }
         };
+        const handlePuzzleStatusUpdate = (serverTime) => { // ADD THIS
+            if (serverTime && new Date(serverTime) > new Date()) {
+                setPuzzleOpenTime(serverTime);
+                setIsPuzzleOpen(false);
+            } else {
+                setPuzzleOpenTime(null);
+                setIsPuzzleOpen(true);
+            }
+        };
 
         // Set up all in-app listeners
         socket.on("team", handleTeamUpdate);
@@ -512,6 +534,7 @@ function Teamdash() {
         socket.on("domainStat", handleDomainStat);
         socket.on("domainSelected", handleDomainSelected);
         socket.on("gameStatusUpdate", handleGameStatusUpdate);
+        socket.on("puzzleStatusUpdate", handlePuzzleStatusUpdate);
 
         // Cleanup function for this effect
         return () => {
@@ -523,6 +546,7 @@ function Teamdash() {
             socket.off("domainStat", handleDomainStat);
             socket.off("domainSelected", handleDomainSelected);
             socket.off("gameStatusUpdate", handleGameStatusUpdate);
+            socket.off("puzzleStatusUpdate", handlePuzzleStatusUpdate);
         };
     }, [team]);
     
@@ -561,6 +585,27 @@ function Teamdash() {
             alert(errorMsg);
             setIsSubmittingGameScore(false);
             if (err.response?.status === 403) { setIsGameModalOpen(false); verify(true); }
+        }
+    };
+    const handlePuzzleEnd = async (score) => {
+        if (!team || team.numberPuzzlePlayed) return;
+        setIsSubmittingPuzzleScore(true);
+        try {
+            await axios.post(`${api}/Hack/team/${team._id}/number-puzzle-score`, { score });
+            alert(`Puzzle Complete! Your score of ${score} has been submitted.`);
+            refreshTeamData();
+            setTimeout(() => {
+                setIsNumberPuzzleModalOpen(false);
+                setIsSubmittingPuzzleScore(false);
+            }, 1500);
+        } catch (err) {
+            const errorMsg = err.response?.data?.error || "There was an error submitting your score.";
+            alert(errorMsg);
+            setIsSubmittingPuzzleScore(false);
+            if (err.response?.status === 403) {
+                setIsNumberPuzzleModalOpen(false);
+                verify(true);
+            }
         }
     };
 
@@ -661,7 +706,22 @@ function Teamdash() {
             {team && <AttendanceModal isOpen={isAttendanceModalOpen} onClose={() => setIsAttendanceModalOpen(false)} team={team} attendanceIcon={attendanceIcon} />}
             <DomainSelectionModal isOpen={isDomainModalOpen} onClose={() => setIsDomainModalOpen(false)} isSubmitting={isSubmittingDomain} selectedSet={selectedSet} domainData={DomainData} selectedDomain={selectedDomain} handleSelect={setSelectedDomain} handleSubmit={handleDomain} isLoading={isDomainListLoading} />
             <GameModal isOpen={isGameModalOpen} onClose={() => !isSubmittingGameScore && setIsGameModalOpen(false)} onGameEnd={handleGameEnd} isSubmitting={isSubmittingGameScore} />
-            
+            <Modal isOpen={isNumberPuzzleModalOpen} onRequestClose={() => !isSubmittingPuzzleScore && setIsNumberPuzzleModalOpen(false)} style={{...customModalStyles, content: {...customModalStyles.content, width: 'auto', maxWidth: '500px'}}} contentLabel="Number Puzzle Game">
+                <div className="relative">
+                    {isSubmittingPuzzleScore && (
+                       <div className="absolute inset-0 bg-gray-900/80 flex flex-col justify-center items-center rounded-lg z-20">
+                            <img src={lod} className="w-40 h-40" alt="Loading..." />
+                            <p className="text-orange-400 font-naruto text-2xl mt-4">Saving Your Score...</p>
+                        </div>
+                    )}
+                    <div className="flex justify-end">
+                       <button onClick={() => setIsNumberPuzzleModalOpen(false)} className="text-gray-400 hover:text-white transition-colors text-3xl font-light" disabled={isSubmittingPuzzleScore}>×</button>
+                    </div>
+                    <NumberPuzzleGame onGameEnd={handlePuzzleEnd} />
+                </div>
+            </Modal>
+
+
             {(loading || !team) ? (
                 <div className="relative z-20 flex items-center justify-center h-screen">
                     <div className="text-center">
@@ -796,6 +856,18 @@ function Teamdash() {
                                             <span className="text-base">Game will unlock at {formatUnlockTime(gameOpenTime)}</span>
                                         </>
                                    )}
+                                </button>
+                                <button
+                                    onClick={() => setIsNumberPuzzleModalOpen(true)}
+                                    disabled={team.numberPuzzlePlayed || !isPuzzleOpen}
+                                    className="w-full p-4 bg-teal-600/80 hover:bg-teal-700 rounded-lg text-center font-bold disabled:opacity-70 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-3 min-h-[72px]"
+                                    >
+                                    {team.numberPuzzlePlayed ? ( <span className="text-lg">Puzzle Score: {team.numberPuzzleScore}</span> ) : isPuzzleOpen ? ( <span className="text-lg">Number Puzzle Challenge</span> ) : (
+                                            <>
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                                                <span className="text-base">Puzzle will unlock at {formatUnlockTime(puzzleOpenTime)}</span>
+                                            </>
+                                    )}
                                 </button>
                                 {pptData && ( <a href={pptData.fileUrl} download className="block text-center p-4 bg-purple-600/80 hover:bg-purple-600 rounded-lg font-bold">Download "{pptData.fileName}"</a> )}
                             </div>

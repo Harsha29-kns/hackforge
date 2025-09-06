@@ -10,6 +10,7 @@ function AdminControls() {
   const [domainTime, setDomainTime] = useState("");
   const [regTime, setRegTime] = useState("");
   const [gameTime, setGameTime] = useState(""); // <-- State for the new game timer
+  const [puzzleTime, setPuzzleTime] = useState("");
 
   // State for registration controls
   const [regLimitInput, setRegLimitInput] = useState(60);
@@ -87,6 +88,15 @@ function AdminControls() {
       alert("Please select a valid date and time for the game.");
     }
   };
+  const handleSetPuzzleTime = () => {
+        if (puzzleTime) {
+            const isoTimestamp = new Date(puzzleTime).toISOString();
+            socket.emit("admin:setPuzzleOpenTime", isoTimestamp);
+            alert(`Number Puzzle opening time has been set to: ${new Date(puzzleTime).toLocaleString()}`);
+        } else {
+            alert("Please select a valid date and time for the puzzle.");
+        }
+    };
 
   // Listen for server updates on registration status
   useEffect(() => {
@@ -179,6 +189,22 @@ function AdminControls() {
               </div>
             </div>
           </div>
+        </section>
+
+        <section className="bg-gray-900/70 backdrop-blur-md p-6 rounded-2xl shadow-lg mb-8 border border-gray-700">
+              <div className="flex items-center gap-3 mb-4">
+                <Gamepad2 className="text-teal-400 h-7 w-7" />
+                <h2 className="text-2xl font-semibold">Number Puzzle Controls</h2>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-gray-300 mb-2">Schedule Puzzle Opening Time</label>
+                  <div className="flex gap-4">
+                    <input type="datetime-local" onChange={(e) => setPuzzleTime(e.target.value)} className="flex-1 px-4 py-2 rounded-lg bg-gray-800 border border-gray-600 shadow-sm focus:ring-2 focus:ring-teal-400 text-white" />
+                    <button onClick={handleSetPuzzleTime} className="bg-teal-500 text-white hover:bg-teal-600 px-6 py-2 rounded-lg font-semibold transition shadow-md">Set Timer</button>
+                  </div>
+                </div>
+              </div>
         </section>
 
       </div>
