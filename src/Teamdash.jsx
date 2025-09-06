@@ -584,7 +584,7 @@ function Teamdash() {
             const errorMsg = err.response?.data?.error || "There was an error submitting your score.";
             alert(errorMsg);
             setIsSubmittingGameScore(false);
-            if (err.response?.status === 403) { setIsGameModalOpen(false); verify(true); }
+            if (err.response?.status === 403) { setIsGameModalOpen(false);  }
         }
     };
     const handlePuzzleEnd = async (score) => {
@@ -604,7 +604,7 @@ function Teamdash() {
             setIsSubmittingPuzzleScore(false);
             if (err.response?.status === 403) {
                 setIsNumberPuzzleModalOpen(false);
-                verify(true);
+                
             }
         }
     };

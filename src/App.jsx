@@ -1,7 +1,7 @@
 import { Route, Routes } from 'react-router';
 import './App.css';
 import Admin from './admin';
-import Attd from './Attd';
+import qratt from './qratt';
 import Teamdash from './Teamdash';
 import Review from './Review';
 import TeamMarks from './TeamMarks';
@@ -15,7 +15,7 @@ function App() {
         <Routes >
         <Route path='/' element={<Landing/>}/>
         <Route path='/admin-login' element={<Admin/>}/>
-        <Route path='/attd' element={<Attd/>}/>
+        <Route path='/attd' element={<qratt/>}/>
         <Route path='/teamlogin' element={<Teamdash/>}/>
         <Route path='/review' element={<Review/>}/>
         <Route path='/TeamMarks' element={<TeamMarks/>}/>
