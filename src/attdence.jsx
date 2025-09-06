@@ -151,7 +151,7 @@ const AttenCard = ({ team, round }) => {
     );
 }
 
-function qratt() {
+function Attd() {
     const [teams, setTeams] = useState([]);
     const [loading, setLoading] = useState(true);
     const [currentSector, setCurrentSector] = useState(0);
@@ -265,4 +265,4 @@ function qratt() {
     );
 }
 
-export default qratt;
+export default Attd;
