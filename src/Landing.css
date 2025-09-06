@@ -1,0 +1,72 @@
+.landing-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: linear-gradient(to bottom right, #1a202c, #2d3748); /* Dark gradient background */
+  color: #e2e8f0; /* Light gray text */
+  font-family: 'Arial', sans-serif;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 20px;
+}
+
+.landing-header {
+  margin-bottom: 40px;
+}
+
+.landing-title {
+  font-size: 4em;
+  color: #e53e3e; /* Red for 404 */
+  margin-bottom: 10px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.landing-subtitle {
+  font-size: 1.5em;
+  color: #cbd5e0;
+}
+
+.landing-main {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.landing-section {
+  background-color: rgba(45, 55, 72, 0.8); /* Slightly lighter, semi-transparent background */
+  padding: 30px 50px;
+  border-radius: 10px;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+  max-width: 600px;
+  width: 100%;
+}
+
+.landing-section h2 {
+  font-size: 2em;
+  color: #a0aec0;
+  margin-bottom: 20px;
+}
+
+.landing-section p {
+  font-size: 1.1em;
+  line-height: 1.6;
+  margin-bottom: 30px;
+}
+.landing-button {
+  background-color: #e53e3e; /* Red button */
+  color: white;
+  padding: 15px 30px;
+  font-size: 1.2em;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+.landing-button:hover {
+  background-color: #c53030; /* Darker red on hover */
+  transform: translateY(-2px);
+}

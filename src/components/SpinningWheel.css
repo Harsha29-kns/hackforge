@@ -1,0 +1,63 @@
+.wheel-container {
+  height: 120px;
+  width: 300px;
+  overflow: hidden;
+  position: relative;
+  border: 2px solid #0891b2; /* cyan-600 */
+  border-radius: 8px;
+  background: #1f2937; /* gray-800 */
+  margin: 0 auto;
+  box-shadow: 0 0 15px rgba(8, 145, 178, 0.5);
+}
+
+.wheel {
+  display: flex;
+  flex-direction: column;
+  /* The animation will move the list upwards */
+  animation: spin linear forwards;
+  /* This will be set dynamically via inline style */
+  /* animation-duration: 30s;  */
+}
+
+.wheel-item {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #e5e7eb; /* gray-200 */
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+}
+
+/* The pointer that indicates the 'selected' item */
+.wheel-pointer {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 40px;
+  transform: translateY(-50%);
+  background: rgba(14, 165, 233, 0.2); /* cyan-500 with opacity */
+  border-top: 2px solid #0ea5e9; /* cyan-500 */
+  border-bottom: 2px solid #0ea5e9; /* cyan-500 */
+  z-index: 10;
+}
+
+
+/* Keyframe animation for the spin */
+@keyframes spin {
+  0% {
+    transform: translateY(0);
+  }
+  /* Ease out effect at the end */
+  90% {
+    transform: translateY(calc(-100% + 120px));
+    animation-timing-function: cubic-bezier(0.25, 1, 0.5, 1);
+  }
+  100% {
+    /* The final position should land on a specific item */
+    /* This will stop at the last item in the list visually */
+    transform: translateY(calc(-100% + 80px)); 
+  }
+}
