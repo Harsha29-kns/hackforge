@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { io } from "socket.io-client";
 import api from "./api";
-import { Clock, Unlock, Lock, Users, Gamepad2 } from "lucide-react"; // Added Gamepad2 icon
+import { Clock, Unlock, Lock, Users, Gamepad2, Target } from "lucide-react"; // Added Gamepad2 icon
+
 
 const socket = io(api);
 
@@ -11,6 +12,7 @@ function AdminControls() {
   const [regTime, setRegTime] = useState("");
   const [gameTime, setGameTime] = useState(""); // <-- State for the new game timer
   const [puzzleTime, setPuzzleTime] = useState("");
+  const [stopTheBarTime, setStopTheBarTime] = useState("");
 
   // State for registration controls
   const [regLimitInput, setRegLimitInput] = useState(60);
@@ -77,6 +79,16 @@ function AdminControls() {
       alert("Signal to close domains has been sent!");
     }
   };
+
+  const handleSetStopTheBarTime = () => {
+        if (stopTheBarTime) {
+            const isoTimestamp = new Date(stopTheBarTime).toISOString();
+            socket.emit("admin:setStopTheBarTime", isoTimestamp);
+            alert(`"Stop the Bar" game opening time set to: ${new Date(stopTheBarTime).toLocaleString()}`);
+        } else {
+            alert("Please select a valid date and time.");
+        }
+    };
 
   // --- ADDED: Game Timer Handler ---
   const handleSetGameTime = () => {
@@ -205,6 +217,21 @@ function AdminControls() {
                   </div>
                 </div>
               </div>
+        </section>
+        <section className="bg-gray-900/70 backdrop-blur-md p-6 rounded-2xl shadow-lg mb-8 border border-gray-700">
+            <div className="flex items-center gap-3 mb-4">
+                <Target className="text-red-400 h-7 w-7" />
+                <h2 className="text-2xl font-semibold">"Stop the Bar" Game Controls</h2>
+            </div>
+            <div className="space-y-4">
+                <div>
+                    <label className="block text-gray-300 mb-2">Schedule Game Opening Time</label>
+                    <div className="flex gap-4">
+                        <input type="datetime-local" onChange={(e) => setStopTheBarTime(e.target.value)} className="flex-1 px-4 py-2 rounded-lg bg-gray-800 border border-gray-600 shadow-sm focus:ring-2 focus:ring-red-400 text-white" />
+                        <button onClick={handleSetStopTheBarTime} className="bg-red-500 text-white hover:bg-red-600 px-6 py-2 rounded-lg font-semibold transition shadow-md">Set Timer</button>
+                    </div>
+                </div>
+            </div>
         </section>
 
       </div>

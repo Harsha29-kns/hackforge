@@ -6,6 +6,7 @@ import "driver.js/dist/driver.css";
 import Modal from 'react-modal';
 import MemoryFlipGame from "./MemoryFlipGame"; //game file
 import NumberPuzzleGame from "./NumberPuzzleGame"; // Import the NumberPuzzleGame component
+import StopTheBarGame from "./StopTheBarGame";
 
 // Import your images
 import lod from "/public/loading.gif";
@@ -320,6 +321,10 @@ function Teamdash() {
     const [gameOpenTime, setGameOpenTime] = useState(null);
     const [isPuzzleOpen, setIsPuzzleOpen] = useState(false); // ADD THIS
     const [puzzleOpenTime, setPuzzleOpenTime] = useState(null); // ADD THIS
+    const [isStopTheBarModalOpen, setIsStopTheBarModalOpen] = useState(false);
+    const [isSubmittingBarScore, setIsSubmittingBarScore] = useState(false);
+    const [isBarGameOpen, setIsBarGameOpen] = useState(false);
+    const [barGameOpenTime, setBarGameOpenTime] = useState(null);
 
     // +++ START: MODIFIED verify FUNCTION +++
     // This function now only handles the FIRST stage of login (HTTP).
@@ -466,6 +471,7 @@ function Teamdash() {
         if (domainOpenTime && new Date() > new Date(domainOpenTime)) {
             setDomainOpen(true);
         }
+        if (barGameOpenTime && new Date() > new Date(barGameOpenTime)) setIsBarGameOpen(true);
     }, 1000);
 
         const handleTeamUpdate = (updatedTeam) => {
@@ -525,6 +531,15 @@ function Teamdash() {
                 setIsPuzzleOpen(true);
             }
         };
+        const handleStopTheBarStatusUpdate = (serverTime) => {
+            if (serverTime && new Date(serverTime) > new Date()) {
+                setBarGameOpenTime(serverTime);
+                setIsBarGameOpen(false);
+            } else {
+                setBarGameOpenTime(null);
+                setIsBarGameOpen(true);
+            }
+        };
 
         // Set up all in-app listeners
         socket.on("team", handleTeamUpdate);
@@ -535,6 +550,7 @@ function Teamdash() {
         socket.on("domainSelected", handleDomainSelected);
         socket.on("gameStatusUpdate", handleGameStatusUpdate);
         socket.on("puzzleStatusUpdate", handlePuzzleStatusUpdate);
+        socket.on("stopTheBarStatusUpdate", handleStopTheBarStatusUpdate);
 
         // Cleanup function for this effect
         return () => {
@@ -547,8 +563,29 @@ function Teamdash() {
             socket.off("domainSelected", handleDomainSelected);
             socket.off("gameStatusUpdate", handleGameStatusUpdate);
             socket.off("puzzleStatusUpdate", handlePuzzleStatusUpdate);
+            socket.off("stopTheBarStatusUpdate", handleStopTheBarStatusUpdate);
         };
     }, [team]);
+    const handleBarGameEnd = async (score) => {
+        if (!team || team.stopTheBarPlayed) return;
+        setIsSubmittingBarScore(true);
+        try {
+            await axios.post(`${api}/Hack/team/${team._id}/stop-the-bar-score`, { score });
+            alert(`Challenge Complete! Your score of ${score} has been submitted.`);
+            refreshTeamData();
+            setTimeout(() => {
+                setIsStopTheBarModalOpen(false);
+                setIsSubmittingBarScore(false);
+            }, 1500);
+        } catch (err) {
+            const errorMsg = err.response?.data?.error || "Error submitting score.";
+            alert(errorMsg);
+            setIsSubmittingBarScore(false);
+            if (err.response?.status === 403) {
+                setIsStopTheBarModalOpen(false);
+            }
+        }
+    };
     
     const handleIssueSubmit = async () => { setIsSubmittingIssue(true); setIssueError(""); try { await axios.post(`${api}/Hack/issue/${team._id}`, { issueText: issueText.trim() }); setIsAssistanceModalOpen(false); setIssueText(""); refreshTeamData(); } catch (err) { setIssueError("Failed to submit request. Please try again later."); } finally { setIsSubmittingIssue(false); } };
     const handleDomain = async () => { setIsSubmittingDomain(true); socket.emit("domainSelected", { teamId: team._id, domain: selectedDomain }); };
@@ -720,6 +757,17 @@ function Teamdash() {
                     <NumberPuzzleGame onGameEnd={handlePuzzleEnd} />
                 </div>
             </Modal>
+            <Modal isOpen={isStopTheBarModalOpen} onRequestClose={() => !isSubmittingBarScore && setIsStopTheBarModalOpen(false)} style={{...customModalStyles, content: {...customModalStyles.content, width: 'auto', maxWidth: '420px'}}} contentLabel="Stop The Bar Game">
+                <div className="relative">
+                    {isSubmittingBarScore && (
+                       <div className="absolute inset-0 bg-gray-900/80 flex flex-col justify-center items-center rounded-lg z-20">
+                            <img src={lod} className="w-40 h-40" alt="Loading..." />
+                            <p className="text-orange-400 font-naruto text-2xl mt-4">Saving Your Score...</p>
+                        </div>
+                    )}
+                    <StopTheBarGame onGameEnd={handleBarGameEnd} />
+                </div>
+            </Modal>
 
 
             {(loading || !team) ? (
@@ -856,6 +904,22 @@ function Teamdash() {
                                             <span className="text-base">Game will unlock at {formatUnlockTime(gameOpenTime)}</span>
                                         </>
                                    )}
+                                </button>
+                                <button
+                                    onClick={() => setIsStopTheBarModalOpen(true)}
+                                    disabled={team.stopTheBarPlayed || !isBarGameOpen}
+                                    className="w-full p-4 bg-pink-600/80 hover:bg-pink-700 rounded-lg text-center font-bold disabled:opacity-70 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-3 min-h-[72px]"
+                                >
+                                    {team.stopTheBarPlayed ? (
+                                        <span className="text-lg">Timing Score: {team.stopTheBarScore}</span>
+                                    ) : isBarGameOpen ? (
+                                        <span className="text-lg">Timing Challenge</span>
+                                    ) : (
+                                        <>
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                                            <span className="text-base">Unlocks at {formatUnlockTime(barGameOpenTime)}</span>
+                                        </>
+                                    )}
                                 </button>
                                 <button
                                     onClick={() => setIsNumberPuzzleModalOpen(true)}

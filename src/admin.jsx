@@ -7,6 +7,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import Papa from "papaparse";
 import JSZip from 'jszip';
+import { Gem } from "lucide-react";
 
 const socket = io(api);
 
@@ -20,8 +21,8 @@ const Notification = ({ message, type, onClear }) => {
     }, [onClear]);
 
     const baseStyles = "fixed top-20 right-6 z-50 px-6 py-4 rounded-xl shadow-2xl text-white font-semibold text-lg animate-fade-in-down";
-    const typeStyles = type === 'success' 
-        ? "bg-gradient-to-r from-green-500 to-emerald-600" 
+    const typeStyles = type === 'success'
+        ? "bg-gradient-to-r from-green-500 to-emerald-600"
         : "bg-gradient-to-r from-red-500 to-rose-600";
 
     return (
@@ -194,36 +195,54 @@ function Admin() {
     const [isZipping, setIsZipping] = useState(false);
     const [zipProgress, setZipProgress] = useState({ current: 0, total: 0 });
     const [verifyingTeamId, setVerifyingTeamId] = useState(null);
-    const [activeView, setActiveView] = useState('teams'); // State for main view
+    const [activeView, setActiveView] = useState('teams');
     const [activeSessionsCount, setActiveSessionsCount] = useState(0);
+    const [selectedTeamScoring, setSelectedTeamScoring] = useState("");
+    const [internalScoreInput, setInternalScoreInput] = useState("");
+    const [isSubmittingScore, setIsSubmittingScore] = useState(false);
 
+    const handleInternalScoreSubmit = async (e) => {
+        e.preventDefault();
+        if (!selectedTeamScoring || internalScoreInput === "") {
+            setNotification({ message: 'Please select a team and enter a score.', type: 'error' });
+            return;
+        }
 
-        const handleResetAllDomains = async () => {
+        setIsSubmittingScore(true);
+        const score = parseInt(internalScoreInput, 10);
+
         try {
-            // IMPORTANT: In a real app, you would pass a secure token in the headers
+            await axios.post(`${api}/Hack/team/${selectedTeamScoring}/internal-score`, { score });
+            setNotification({ message: 'Score submitted successfully!', type: 'success' });
+            const updatedTeams = teams.map(t => 
+                t._id === selectedTeamScoring ? { ...t, internalGameScore: score } : t
+            );
+            setTeams(updatedTeams);
+            setSelectedTeamScoring("");
+            setInternalScoreInput("");
+        } catch (error) {
+            const errorMsg = error.response?.data?.error || "Failed to submit score.";
+            setNotification({ message: errorMsg, type: 'error' });
+        } finally {
+            setIsSubmittingScore(false);
+        }
+    };
+
+    const handleResetAllDomains = async () => {
+        try {
             await axios.post(`${api}/Hack/admin/reset-domains`);
             setNotification({ message: 'All domains have been reset!', type: 'success' });
-            // Refetch data to update the UI instantly
-            // You can call your existing fetchData function here
-            // For example: fetchData();
-            // This is a simplified version:
             const [teamsRes, domainsRes] = await Promise.all([
                 axios.get(`${api}/Hack/students`),
                 axios.get(`${api}/domains`),
             ]);
             setTeams(teamsRes.data);
             setAllDomains(domainsRes.data);
-
         } catch (error) {
             setNotification({ message: 'Failed to reset domains.', type: 'error' });
         }
     };
 
-    
-
-    
-
-    // --- All original handler functions ---
     const handleLogin = (e) => { e.preventDefault(); if (passwordInput === "harsha") { setIsAuthenticated(true); sessionStorage.setItem("adminAuthenticated", "true"); setLoginError(""); } else { setLoginError("Incorrect Secret Jutsu. Access Denied."); setPasswordInput(""); } };
     const handleLogout = () => { sessionStorage.removeItem("adminAuthenticated"); setIsAuthenticated(false); setPasswordInput(""); };
     const handleSendPPT = async () => { if (!pptTemplate) { setUploadError("Please select a file."); return; } setIsUploading(true); setUploadError(""); try { const formData = new FormData(); formData.append("file", pptTemplate); formData.append("upload_preset", "ppt_templet"); const response = await axios.post("https://api.cloudinary.com/v1_1/dsvwojzli/raw/upload", formData); socket.emit('admin:sendPPT', { fileUrl: response.data.secure_url, fileName: pptTemplate.name }); setPptTemplate(null); document.getElementById('ppt-input').value = null; setNotification({ message: 'PPT Sent!', type: 'success' }); } catch (error) { setUploadError("Upload failed."); setNotification({ message: 'PPT Upload Failed!', type: 'error' }); } finally { setIsUploading(false); } };
@@ -239,21 +258,20 @@ function Admin() {
     const handleDownloadAllPasses = async () => { setIsZipping(true); setZipProgress({ current: 0, total: 0 }); const zip = new JSZip(); const verifiedTeams = teams.filter(t => t.verified); if (verifiedTeams.length === 0) { setNotification({ message: 'No verified teams to export!', type: 'error' }); setIsZipping(false); return; } setZipProgress({ current: 0, total: verifiedTeams.length }); try { for (let i = 0; i < verifiedTeams.length; i++) { const team = verifiedTeams[i]; setZipProgress({ current: i + 1, total: verifiedTeams.length }); const passElement = document.getElementById(`credential-pass-${team._id}`); if (!passElement) { continue; } const canvas = await html2canvas(passElement, { scale: 2 }); const imgData = canvas.toDataURL('image/png'); const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [canvas.width, canvas.height] }); pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height); const pdfBlob = pdf.output('blob'); const safeFileName = team.teamname.replace(/[/\\?%*:|"<>]/g, '-') || 'Unnamed Team'; zip.file(`${safeFileName}_Credentials.pdf`, pdfBlob); } const zipBlob = await zip.generateAsync({ type: "blob" }); const link = document.createElement("a"); link.href = URL.createObjectURL(zipBlob); link.download = "All_Team_Credentials.zip"; document.body.appendChild(link); link.click(); document.body.removeChild(link); setNotification({ message: 'All credentials zipped!', type: 'success' }); } catch (error) { setNotification({ message: 'ZIP export failed!', type: 'error' }); } finally { setIsZipping(false); setZipProgress({ current: 0, total: 0 }); } };
 
     const fetchData = async () => {
-    // No need to set loading here if you don't want the full screen loader on every minor update
-    try {
-        const [teamsRes, domainsRes, issuesRes] = await Promise.all([
-            axios.get(`${api}/Hack/students`),
-            axios.get(`${api}/domains`),
-            axios.get(`${api}/Hack/issues`)
-        ]);
-        setTeams(teamsRes.data);
-        setAllDomains(domainsRes.data);
-        const pendingIssuesTeams = issuesRes.data.map(team => ({...team, issues: team.issues.filter(issue => issue.status === 'Pending')})).filter(team => team.issues.length > 0);
-        setTeamsWithIssues(pendingIssuesTeams);
-    } catch (error) {
-        console.error("Error fetching data:", error);
-    }
-};
+        try {
+            const [teamsRes, domainsRes, issuesRes] = await Promise.all([
+                axios.get(`${api}/Hack/students`),
+                axios.get(`${api}/domains`),
+                axios.get(`${api}/Hack/issues`)
+            ]);
+            setTeams(teamsRes.data);
+            setAllDomains(domainsRes.data);
+            const pendingIssuesTeams = issuesRes.data.map(team => ({...team, issues: team.issues.filter(issue => issue.status === 'Pending')})).filter(team => team.issues.length > 0);
+            setTeamsWithIssues(pendingIssuesTeams);
+        } catch (error) {
+            console.error("Error fetching data:", error);
+        }
+    };
 
     useEffect(() => {
         if (!isAuthenticated) {
@@ -261,30 +279,19 @@ function Admin() {
             return;
         }
 
-        // Set initial loading state and fetch data when component mounts
         setLoading(true);
         fetchData().finally(() => setLoading(false));
 
-        // --- SETUP ALL SOCKET.IO LISTENERS ---
-        const handleActiveSessionsUpdate = (data) => {
-            setActiveSessionsCount(data.count);
-        };
-
-        const handleDomainsUpdate = () => {
-            console.log("Received 'domains:updated' event. Refreshing data.");
-            fetchData(); // This is the key part for real-time updates
-        };
+        const handleActiveSessionsUpdate = (data) => setActiveSessionsCount(data.count);
+        const handleDomainsUpdate = () => fetchData();
 
         socket.on('admin:activeSessionsUpdate', handleActiveSessionsUpdate);
-        socket.on('domains:updated', handleDomainsUpdate); // Listen for the update event
-
+        socket.on('domains:updated', handleDomainsUpdate);
         socket.emit('admin:getActiveSessions');
 
-        // --- CLEANUP FUNCTION ---
-        // This runs when the component unmounts to prevent memory leaks
         return () => {
             socket.off('admin:activeSessionsUpdate', handleActiveSessionsUpdate);
-            socket.off('domains:updated', handleDomainsUpdate); // Unsubscribe from the event
+            socket.off('domains:updated', handleDomainsUpdate);
         };
     }, [isAuthenticated]);
 
@@ -303,14 +310,13 @@ function Admin() {
             <div className="absolute inset-0 bg-black/80 backdrop-blur-md"></div>
             
             <div className="relative z-10 flex h-screen">
-                {/* --- SIDEBAR --- */}
                 <aside className="w-72 bg-black/30 border-r border-orange-500/20 flex flex-col p-6">
                     <h1 className="text-3xl font-naruto text-orange-500 mb-8">Admin Panel</h1>
                     <nav className="flex flex-col gap-3 flex-grow">
                         <button onClick={() => setActiveView('teams')} className={`p-3 rounded-lg font-semibold text-left transition ${activeView === 'teams' ? 'bg-orange-600' : 'hover:bg-gray-700/50'}`}>Team Management</button>
+                        <button onClick={() => setActiveView('scoring')} className={`p-3 rounded-lg font-semibold text-left transition ${activeView === 'scoring' ? 'bg-orange-600' : 'hover:bg-gray-700/50'}`}>Manual Scoring</button>
                         <button onClick={() => setActiveView('broadcast')} className={`p-3 rounded-lg font-semibold text-left transition ${activeView === 'broadcast' ? 'bg-orange-600' : 'hover:bg-gray-700/50'}`}>Broadcast Center</button>
                         <button onClick={() => setActiveView('controls')} className={`p-3 rounded-lg font-semibold text-left transition ${activeView === 'controls' ? 'bg-orange-600' : 'hover:bg-gray-700/50'}`}>Event Controls</button>
-                        {/* Add the new button for the domain monitor */}
                         <button onClick={() => setActiveView('domains')} className={`p-3 rounded-lg font-semibold text-left transition ${activeView === 'domains' ? 'bg-orange-600' : 'hover:bg-gray-700/50'}`}>Domain Monitor</button>
                         <button onClick={() => setActiveView('export')} className={`p-3 rounded-lg font-semibold text-left transition ${activeView === 'export' ? 'bg-orange-600' : 'hover:bg-gray-700/50'}`}>Export Data</button>
                     </nav>
@@ -325,7 +331,6 @@ function Admin() {
                     <button onClick={handleLogout} className="mt-8 w-full bg-red-600/80 hover:bg-red-600 text-white font-semibold py-3 rounded-lg">Logout</button>
                 </aside>
 
-                {/* --- MAIN CONTENT AREA --- */}
                 <main className="flex-1 p-8 overflow-y-auto">
                     {loading ? <div className="flex h-full items-center justify-center"><NarutoLoader /></div> :
                     <>
@@ -334,7 +339,9 @@ function Admin() {
                                 <h2 className="text-4xl font-naruto text-orange-400 mb-6">Team Management</h2>
                                 <input type="text" placeholder="Search for a team..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full p-3 mb-6 bg-gray-800/50 rounded-lg border-2 border-gray-700 focus:outline-none focus:border-orange-500"/>
                                 <div className="space-y-3 max-h-[calc(100vh-250px)] overflow-y-auto pr-2">
-                                    {teams.filter(team => team.teamname.toLowerCase().includes(searchTerm.toLowerCase())).map(team => (
+                                    {teams.filter(team => team.teamname.toLowerCase().includes(searchTerm.toLowerCase())).map(team => {
+                                        const totalGameScore = (team.memoryGameScore || 0) + (team.numberPuzzleScore || 0) + (team.internalGameScore || 0);
+                                        return (
                                          <div key={team._id} className="bg-gray-800/60 rounded-lg p-4">
                                             <div className="flex justify-between items-center">
                                                 <div className="flex-1">
@@ -342,7 +349,7 @@ function Admin() {
                                                     <div className="flex items-center gap-3 text-sm mt-1">
                                                         <span className={`font-semibold ${team.verified ? 'text-green-400' : 'text-red-400'}`}>{team.verified ? 'Verified' : 'Not Verified'}</span>
                                                         <span className="text-gray-600">|</span>
-                                                        <span className="text-gray-300">Game Score: <strong className="text-white">{team.memoryGameScore ?? 'N/A'}</strong></span>
+                                                        <span className="text-gray-300">Total Game Score: <strong className="text-white">{totalGameScore}</strong></span>
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-4">
@@ -357,23 +364,69 @@ function Admin() {
                                                  <div className="mt-4 pt-4 border-t border-gray-700 text-sm space-y-1">
                                                      <p><strong className="text-orange-400 w-24 inline-block">Lead:</strong> {team.name} ({team.registrationNumber})</p>
                                                      <p><strong className="text-orange-400 w-24 inline-block">Members:</strong> {team.teamMembers.map(m => m.name).join(', ')}</p>
-                                                     <p><strong className="text-orange-400 w-24 inline-block">Game Score:</strong> {team.memoryGameScore ?? 'Not Played'}</p>
+                                                     <p><strong className="text-orange-400 w-24 inline-block">Memory Game:</strong> {team.memoryGameScore ?? 'Not Played'}</p>
                                                      <p><strong className="text-orange-400 w-24 inline-block">Number Puzzle:</strong> {team.numberPuzzleScore ?? 'Not Played'}</p>
+                                                     <p><strong className="text-orange-400 w-24 inline-block">Internal Game:</strong> {team.internalGameScore ?? 'N/A'}</p>
                                                  </div>
                                              )}
                                          </div>
-                                    ))}
+                                        )
+                                    })}
                                 </div>
                             </div>
                         )}
-                        {/* Add the new view here */}
-                            {activeView === 'domains' && (
-                                <DomainMonitor
-                                    teams={teams}
-                                    domains={allDomains}
-                                    onResetDomains={handleResetAllDomains}
-                                />
-                            )}
+                        {activeView === 'scoring' && (
+                             <div>
+                                 <h2 className="text-4xl font-naruto text-orange-400 mb-6">Manual Score Entry</h2>
+                                 <div className="bg-gray-800/60 p-6 rounded-lg border border-cyan-500/30 max-w-lg mx-auto">
+                                     <h3 className="text-2xl font-naruto text-cyan-400 mb-4 flex items-center gap-3">
+                                         <Gem />
+                                         Add Internal Game Score
+                                     </h3>
+                                     <form onSubmit={handleInternalScoreSubmit} className="space-y-4">
+                                         <div>
+                                             <label className="block text-gray-300 mb-2">Select Team</label>
+                                             <select 
+                                                 value={selectedTeamScoring}
+                                                 onChange={(e) => setSelectedTeamScoring(e.target.value)}
+                                                 className="w-full p-3 bg-gray-700 text-white rounded-md border border-gray-600 focus:outline-none focus:border-cyan-500"
+                                             >
+                                                 <option value="">-- Choose a team --</option>
+                                                 {teams.map(team => (
+                                                     <option key={team._id} value={team._id}>
+                                                         {team.teamname} (Current: {team.internalGameScore || 0})
+                                                     </option>
+                                                 ))}
+                                             </select>
+                                         </div>
+                                         <div>
+                                             <label className="block text-gray-300 mb-2">Enter Score</label>
+                                             <input 
+                                                 type="number"
+                                                 value={internalScoreInput}
+                                                 onChange={(e) => setInternalScoreInput(e.target.value)}
+                                                 placeholder="e.g., 150"
+                                                 className="w-full p-3 bg-gray-700 text-white rounded-md border border-gray-600 focus:outline-none focus:border-cyan-500"
+                                             />
+                                         </div>
+                                         <button 
+                                             type="submit"
+                                             disabled={isSubmittingScore}
+                                             className="w-full bg-cyan-600 hover:bg-cyan-700 font-bold py-3 rounded-lg disabled:opacity-50 transition"
+                                         >
+                                             {isSubmittingScore ? 'Submitting...' : 'Submit Score'}
+                                         </button>
+                                     </form>
+                                 </div>
+                             </div>
+                        )}
+                        {activeView === 'domains' && (
+                            <DomainMonitor
+                                teams={teams}
+                                domains={allDomains}
+                                onResetDomains={handleResetAllDomains}
+                            />
+                        )}
                         {activeView === 'broadcast' && (
                             <div className="space-y-8">
                                 <div>
@@ -424,7 +477,6 @@ function Admin() {
             {showAttdModal && ( <div className="fixed inset-0 bg-black/80 flex justify-center items-center z-50 p-4"> <div className="bg-gray-900 border-2 border-orange-500/50 rounded-xl shadow-lg p-6 w-full max-w-sm flex flex-col"> <h2 className="text-xl font-bold text-orange-400 mb-4">Select Attendance Round</h2> <div className="flex flex-col gap-3"> {["First", "Second", "Third", "Fourth"].map((round, idx) => ( <button key={round} className={`px-4 py-2 rounded-lg font-semibold transition ${selectedAttdRound === idx + 1 ? "bg-orange-700 text-white" : "bg-gray-700 text-gray-300 hover:bg-orange-600 hover:text-white"}`} onClick={() => { setSelectedAttdRound(idx + 1); setShowAttdModal(false); navigate(`/attd?round=${idx + 1}`); }} >{round} Attendance</button> ))} </div> <button className="mt-6 px-4 py-2 bg-gray-600 text-white rounded-lg" onClick={() => setShowAttdModal(false)}>Cancel</button> </div> </div> )}
             {showCredentialModal && ( <div className="fixed inset-0 bg-black/80 flex justify-center items-center z-50 p-4"> <div className="bg-gray-900 border-2 border-cyan-500/50 rounded-xl shadow-lg p-6 w-full max-w-lg flex flex-col"> <div className="flex justify-between items-center mb-6"> <h2 className="text-2xl text-cyan-400 font-naruto">Export Team Credentials</h2> <button className="text-gray-400 hover:text-white text-3xl" onClick={() => setShowCredentialModal(false)}>&times;</button> </div> <div className="space-y-4 border-b border-gray-700 pb-6 mb-6"> <p className="text-gray-300 text-center font-semibold">Download a Single Team Pass</p> <div className="flex flex-col sm:flex-row gap-4"> <select value={selectedTeamForPass} onChange={(e) => setSelectedTeamForPass(e.target.value)} className="flex-grow p-3 bg-gray-800 text-white rounded-md border border-gray-700 focus:outline-none focus:border-cyan-500"> <option value="">-- Select a Verified Team --</option> {teams.filter(t => t.verified).map(team => ( <option key={team._id} value={team._id}>{team.teamname}</option> ))} </select> <button onClick={handleDownloadPass} disabled={!selectedTeamForPass || isGeneratingPass} className="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"> {isGeneratingPass ? (<><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />Generating...</>) : 'Download Pass (PDF)'} </button> </div> </div> <div className="space-y-4 text-center"> <p className="text-gray-300 font-semibold">Download All Verified Team Passes</p> <p className="text-sm text-gray-500">This will generate a PDF for every verified team and download them in a single .zip file.</p> <button onClick={handleDownloadAllPasses} disabled={isZipping} className="w-full bg-gradient-to-r from-purple-600 to-indigo-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"> {isZipping ? ( <> <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> Zipping... ({zipProgress.current} / {zipProgress.total}) </> ) : ( 'Download All as ZIP' )} </button> </div> </div> </div> )}
 
-            {/* Hidden Div for PDF generation */}
             <div ref={passContainerRef} style={{ position: 'absolute', left: '-9999px', top: 0, zIndex: -10 }}>
                 {teams.filter(t => t.verified).map(team => (
                     <div
@@ -481,7 +533,6 @@ function Admin() {
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginTop: '2rem' }}>
-                            {/* Team Lead */}
                             <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', backgroundColor: '#ffffff', padding: '1.5rem', borderRadius: '1rem', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
                                 {team.lead?.qrCode && team.lead.qrCode.startsWith('data:image') ? (
                                     <img src={team.lead.qrCode} alt={`QR Code for ${team.name}`} style={{ width: '8rem', height: '8rem', borderRadius: '0.5rem', border: '2px solid #e2e8f0', padding: '0.25rem' }}/>
@@ -498,7 +549,6 @@ function Admin() {
                                     <p style={{ color: '#4a5568' }}>Reg No: {team.registrationNumber}</p>
                                 </div>
                             </div>
-                            {/* Team Members */}
                             {team.teamMembers.map((member, index) => (
                                 <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', backgroundColor: '#ffffff', padding: '1.5rem', borderRadius: '1rem', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
                                     {member.qrCode && member.qrCode.startsWith('data:image') ? (

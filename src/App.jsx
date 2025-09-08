@@ -9,6 +9,7 @@ import AttdDetail from './AttdDetail';
 import Instructions from "./Instructions";
 import AdminControls from './AdminControls'
 import Landing from './Landing';
+import GameLeaderboard from './GameLeaderboard';
 
 function App() {
     return (
@@ -22,6 +23,7 @@ function App() {
         <Route path='/attdetail' element={<AttdDetail/>}/>
         <Route path='/instructions' element={<Instructions/>}/>
         <Route path='/admin-controls' element={<AdminControls />} />
+        <Route path='/game-leaderboard' element={<GameLeaderboard />} />
       </Routes>           
     );
 }
