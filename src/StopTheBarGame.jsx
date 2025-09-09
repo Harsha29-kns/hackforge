@@ -1,13 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
 
-// --- Game Configuration ---
-const ALL_ICONS = ['💻', '⚙️', '🚀', '🌐', '💡', '🔥', '🧠', '⚡️', '⚛️'];
+// --- Game Configuration (Corrected & Harder) ---
+const ALL_ICONS = [
+    '💻', '⚙️', '🚀', '🌐', '💡', '🔥', '🧠', '⚡️', '⚛️', 
+    '🛡️', '🛰️', '💎', '📈', '🔑', '🔬', '🔭'
+];
 
-// Speed progression for the game
+// Speed progression (Adjusted for multi-flash clarity)
 const getSpeed = (round) => {
-    if (round <= 2) return { flashTime: 400, delay: 200 };   // Slow
-    if (round <= 5) return { flashTime: 280, delay: 140 };   // Medium
-    return { flashTime: 150, delay: 75 };                    // Fast
+    if (round <= 2) return { flashTime: 200, delay: 100 };
+    if (round <= 5) return { flashTime: 150, delay: 70 };
+    return { flashTime: 100, delay: 40 }; 
 };
 
 const shuffleArray = (array) => {
@@ -26,28 +29,48 @@ const CodeSequenceGame = ({ onGameEnd }) => {
     const [activeIcon, setActiveIcon] = useState(null);
     const [gameIcons, setGameIcons] = useState([]);
 
-    // CHANGED: Function now accepts the icon array to use
-    const addNewIconToSequence = (currentSequence, iconsForRound) => {
-        // CHANGED: Uses the passed-in array to prevent stale state
-        const nextIcon = iconsForRound[Math.floor(Math.random() * iconsForRound.length)];
-        const newSequence = [...currentSequence, nextIcon];
-        setSequence(newSequence);
-        setPlayerGuess([]);
-        setGameState('watching');
-        
-        const { flashTime, delay } = getSpeed(newSequence.length);
-        
+    const flashSequence = (sequenceToFlash) => {
+        const uniqueRounds = sequenceToFlash.filter((val, i, arr) => arr.indexOf(val) === i).length;
+        const { flashTime, delay } = getSpeed(uniqueRounds);
         let i = 0;
         const interval = setInterval(() => {
-            setActiveIcon(newSequence[i]); 
+            setActiveIcon(sequenceToFlash[i]);
             setTimeout(() => setActiveIcon(null), flashTime);
             i++;
-            if (i >= newSequence.length) {
+            if (i >= sequenceToFlash.length) {
                 clearInterval(interval);
                 setGameState('playing');
             }
         }, flashTime + delay);
     };
+
+    const startNewRound = useCallback((currentSequence) => {
+        const newIconsForRound = shuffleArray(ALL_ICONS).slice(0, 9);
+        setGameIcons(newIconsForRound);
+        setPlayerGuess([]);
+        setGameState('watching');
+
+        const nextIcon = newIconsForRound[Math.floor(Math.random() * newIconsForRound.length)];
+        const uniqueRounds = currentSequence.filter((val, i, arr) => arr.indexOf(val) === i).length;
+        
+        // --- CORRECTED MULTI-FLASH LOGIC ---
+        let numberOfFlashes = 1;
+        const randomChance = Math.random();
+        // Probability of multi-flashes increases with each unique round
+        if (uniqueRounds > 4 && randomChance < 0.20) { // 20% chance of triple flash
+            numberOfFlashes = 3;
+        } else if (uniqueRounds > 1 && randomChance < 0.40) { // 40% chance of double flash
+            numberOfFlashes = 2;
+        }
+
+        const newSequence = [...currentSequence];
+        for(let i = 0; i < numberOfFlashes; i++) {
+            newSequence.push(nextIcon);
+        }
+        
+        setSequence(newSequence);
+        flashSequence(newSequence);
+    }, []);
 
     const handlePlayerInput = (icon) => {
         if (gameState !== 'playing') return;
@@ -63,14 +86,13 @@ const CodeSequenceGame = ({ onGameEnd }) => {
         if (newPlayerGuess.length === sequence.length) {
             setGameState('watching');
             setTimeout(() => {
-                // CHANGED: Pass the current gameIcons from state to match the new function signature
-                addNewIconToSequence(sequence, gameIcons);
+                startNewRound(sequence);
             }, 1000);
         }
     };
 
     const finishGame = useCallback(() => {
-        const roundsCompleted = sequence.length > 0 ? sequence.length - 1 : 0;
+        const roundsCompleted = Math.max(0, sequence.filter((val, index, arr) => arr.indexOf(val) === index).length - 1);
         const score = Math.min(roundsCompleted * 10, 100);
         setTimeout(() => onGameEnd(score), 1200);
     }, [sequence, onGameEnd]);
@@ -82,27 +104,22 @@ const CodeSequenceGame = ({ onGameEnd }) => {
     }, [gameState, finishGame]);
 
     const startGame = () => {
-        // CHANGED: Generate icons into a local variable first
-        const newGameIcons = shuffleArray(ALL_ICONS).slice(0, 6);
-        setGameIcons(newGameIcons);
         setSequence([]);
-        setPlayerGuess([]);
         setGameState('starting');
         setTimeout(() => {
-            // CHANGED: Pass the new icons directly to the function to avoid the stale state bug
-            addNewIconToSequence([], newGameIcons);
+            startNewRound([]);
         }, 1000);
     };
 
     if (gameState === 'instructions') {
         return (
             <div className="text-center p-4 text-white">
-                <h2 className="text-3xl font-bold font-naruto text-orange-400 mb-4">Code Sequence Challenge</h2>
+                <h2 className="text-3xl font-bold font-naruto text-orange-400 mb-4">Code Sequence: EXTREME</h2>
                 <div className="text-left space-y-3 mb-6 max-w-sm mx-auto">
-                    <p><strong>Goal:</strong> Watch the sequence of flashing icons and repeat it back perfectly.</p>
-                    <p><strong>Gameplay:</strong> The sequence gets longer and <strong className="text-red-400">FASTER</strong> each round. One wrong move and the game is over!</p>
-                    <p><strong>Difficulty:</strong> The flash speed will increase after <strong className="text-yellow-300">Round 2</strong> and again after <strong className="text-yellow-300">Round 5</strong>.</p>
-                    <p><strong>Scoring:</strong> You get <strong className="text-yellow-300">10 points</strong> for every round you complete (max 100).</p>
+                    <p><strong>Goal:</strong> Repeat the sequence perfectly. It gets longer and <strong className="text-red-400">FASTER</strong> each round.</p>
+                    <p className="font-bold text-yellow-300">⚠️ NEW RULE #1: The icon pads will shuffle and change after every successful round.</p>
+                    <p className="font-bold text-yellow-300">⚠️ NEW RULE #2: An icon might flash multiple times (2x or even 3x). You must press it for each flash!</p>
+                    <p><strong>Scoring:</strong> You get <strong className="text-yellow-300">10 points</strong> for every unique icon round you complete (max 100).</p>
                 </div>
                 <button 
                     onClick={startGame}
@@ -123,7 +140,7 @@ const CodeSequenceGame = ({ onGameEnd }) => {
                 {gameState === 'starting' && 'Get Ready...'}
             </h2>
             <p className="text-lg mb-4">
-                Round: <span className="font-bold text-white">{sequence.length}</span>
+                Round: <span className="font-bold text-white">{sequence.filter((val, index, arr) => arr.indexOf(val) === index).length}</span>
             </p>
             
             <div className="grid grid-cols-3 gap-4 w-full max-w-xs">
@@ -145,7 +162,7 @@ const CodeSequenceGame = ({ onGameEnd }) => {
             {gameState === 'finished' && (
                 <div className="mt-6 text-center">
                     <h3 className="text-2xl font-bold text-red-500 animate-pulse">Sequence Broken!</h3>
-                    <p className="text-lg">You completed {sequence.length - 1} rounds.</p>
+                    <p className="text-lg">You completed {Math.max(0, sequence.filter((val, index, arr) => arr.indexOf(val) === index).length - 1)} rounds.</p>
                     <p className="text-lg">Submitting your score...</p>
                 </div>
             )}

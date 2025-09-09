@@ -20,7 +20,7 @@ const MemoryFlipGame = ({ onGameEnd }) => {
     const [matchedPairs, setMatchedPairs] = useState([]);
     const [moves, setMoves] = useState(0);
     const [timeLeft, setTimeLeft] = useState(INITIAL_TIME);
-    const [peekUsed, setPeekUsed] = useState(false);
+    const [peekUsed, setPeekUsed] = useState(false); // This can be removed if 'peek' is no longer a feature
     const timerRef = useRef(null);
 
     const initializeGame = useCallback(() => {
@@ -43,22 +43,34 @@ const MemoryFlipGame = ({ onGameEnd }) => {
         return () => clearInterval(timerRef.current);
     }, [initializeGame]);
 
+    // --- UPDATED SCORING LOGIC ---
     const calculateScore = useCallback(() => {
-        const baseScore = 500;
-        const timeBonus = timeLeft * 10;
-        const movePenalty = (moves - PAIRS_COUNT) * 15;
-        let finalScore = baseScore + timeBonus - movePenalty;
-
-        if (peekUsed) {
-            finalScore *= 0.5; // 50% score penalty
-        }
+        const MAX_SCORE = 100;
         
+        // Scenario 1: Timer runs out before completion
         if (timeLeft <= 0) {
-            finalScore = matchedPairs.length * 20; // Score based only on pairs found
+            // Score is proportional to the pairs found, capped at 50
+            const pairsFoundRatio = matchedPairs.length / PAIRS_COUNT;
+            return Math.round(pairsFoundRatio * 50);
         }
 
-        return Math.max(Math.round(finalScore), 10);
-    }, [moves, timeLeft, matchedPairs, peekUsed]);
+        // Scenario 2: Game is completed successfully
+        let score = MAX_SCORE;
+
+        // Penalty for time taken: Lose up to 40 points based on time
+        const timeUsed = INITIAL_TIME - timeLeft;
+        const timePenalty = (timeUsed / INITIAL_TIME) * 40;
+        score -= timePenalty;
+        
+        // Penalty for extra moves: Lose 2 points for each extra move
+        const extraMoves = moves - PAIRS_COUNT;
+        const movePenalty = Math.max(0, extraMoves) * 2;
+        score -= movePenalty;
+        
+        // Ensure score is within bounds (e.g., min score of 10 if completed)
+        return Math.max(10, Math.round(score));
+
+    }, [moves, timeLeft, matchedPairs]);
 
     const finishGame = useCallback(() => {
         setGameState('finished');
@@ -67,9 +79,7 @@ const MemoryFlipGame = ({ onGameEnd }) => {
         setTimeout(() => onGameEnd(score), 1200);
     }, [calculateScore, onGameEnd]);
 
-    // ✅ FIXED TIMER LOGIC
     useEffect(() => {
-        // Only run the timer if the game is in the 'playing' state.
         if (gameState === 'playing') {
             timerRef.current = setInterval(() => {
                 setTimeLeft(prev => {
@@ -82,9 +92,8 @@ const MemoryFlipGame = ({ onGameEnd }) => {
                 });
             }, 1000);
         }
-        // This cleanup function will run when the component unmounts or when gameState changes.
         return () => clearInterval(timerRef.current);
-    }, [gameState, finishGame]); // The effect now only depends on gameState and finishGame
+    }, [gameState, finishGame]);
     
     useEffect(() => {
         if (flippedIndices.length === 2) {
@@ -105,21 +114,11 @@ const MemoryFlipGame = ({ onGameEnd }) => {
         }
     }, [matchedPairs, finishGame]);
 
-
     const handleCardClick = (index) => {
         if (gameState !== 'playing' || flippedIndices.length === 2 || flippedIndices.includes(index) || matchedPairs.includes(cards[index].symbol)) {
             return;
         }
         setFlippedIndices(prev => [...prev, index]);
-    };
-
-    const handlePeek = () => {
-        setPeekUsed(true);
-        setGameState('playing');
-        setFlippedIndices(cards.map(c => c.id));
-        setTimeout(() => {
-            setFlippedIndices([]);
-        }, 3000);
     };
 
     const isCardFlipped = (card) => {
@@ -133,10 +132,10 @@ const MemoryFlipGame = ({ onGameEnd }) => {
                 <div className="text-left space-y-3 mb-6">
                     <p><strong>Goal:</strong> Match all 10 pairs of cards as quickly as you can.</p>
                     <p><strong>Timer:</strong> You have <strong className="text-yellow-400">{INITIAL_TIME} seconds</strong> to complete the puzzle.</p>
-                     <p><strong>Scoring:</strong> Your score is based on moves and time remaining. If the timer runs out, your score will be based on the number of pairs you found.</p>
+                    <p><strong>Scoring:</strong> Your score is based on moves and time remaining (Max 100). If time runs out, your score will be based on pairs found.</p>
                 </div>
                 <div className="flex flex-col gap-3">
-                     <button
+                    <button
                         onClick={() => setGameState('playing')}
                         className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg text-lg"
                     >
@@ -146,7 +145,6 @@ const MemoryFlipGame = ({ onGameEnd }) => {
             </div>
         );
     }
-
 
     return (
         <div className="flex flex-col items-center justify-center p-4">

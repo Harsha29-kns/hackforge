@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { ShieldCheck, QrCode, Gamepad2, HelpCircle, UserCheck, Layers } from 'lucide-react';
 import kalasalingam from "/public/kalasalingam.png";
 import score from "/public/scorecraft.jpg";
-import narutoGif from "/public/W4W.gif";
 
 const narutoFontStyle = {
     fontFamily: "'Ninja Naruto', sans-serif",
@@ -94,7 +93,19 @@ function Instructions() {
                         transition={{ duration: 0.7, delay: 0.5, type: 'spring' }}
                     >
                         <img 
-                            src={narutoGif} 
+                            src={"https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3end2dWxnZ2xmNDd4MmNpdWF2aXVxN25pZTB5eDA1OGswYTVxd2dmdiZlcD12MV9naWZzX3NlYXJjaCZjdD1n/Hld1RfHBeQDmM/giphy.gif"} 
+                            alt="Naruto Mission Scroll" 
+                            className="rounded-2xl border-4 border-orange-500/40 shadow-2xl shadow-orange-500/20 w-full max-w-md"
+                        />
+                    </motion.div>
+                                        <motion.div 
+                        className="flex justify-center items-center"
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.7, delay: 0.5, type: 'spring' }}
+                    >
+                        <img 
+                            src={"https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3MGZjM2t2b2t2and2Nmk4aDZiMXJqcGdmMmc3OWdjYnZzMWgzd3EyYyZlcD12MV9naWZzX3NlYXJjaCZjdD1n/a3wq0KrRi6e76/giphy.gif"} 
                             alt="Naruto Mission Scroll" 
                             className="rounded-2xl border-4 border-orange-500/40 shadow-2xl shadow-orange-500/20 w-full max-w-md"
                         />
