@@ -28,10 +28,12 @@ const CodeSequenceGame = ({ onGameEnd }) => {
     const [playerGuess, setPlayerGuess] = useState([]);
     const [activeIcon, setActiveIcon] = useState(null);
     const [gameIcons, setGameIcons] = useState([]);
+    const [round, setRound] = useState(0); // Use a simple, reliable round counter
 
-    const flashSequence = (sequenceToFlash) => {
-        const uniqueRounds = sequenceToFlash.filter((val, i, arr) => arr.indexOf(val) === i).length;
-        const { flashTime, delay } = getSpeed(uniqueRounds);
+    // --- CORRECTED: Flash sequence logic ---
+    const flashSequence = useCallback((sequenceToFlash) => {
+        // Use the simple `round` state for speed calculation
+        const { flashTime, delay } = getSpeed(round);
         let i = 0;
         const interval = setInterval(() => {
             setActiveIcon(sequenceToFlash[i]);
@@ -42,24 +44,25 @@ const CodeSequenceGame = ({ onGameEnd }) => {
                 setGameState('playing');
             }
         }, flashTime + delay);
-    };
+    }, [round]); // Dependency on `round` ensures speed updates correctly
 
+    // --- CORRECTED: New round logic with proper dependencies ---
     const startNewRound = useCallback((currentSequence) => {
+        const nextRound = round + 1;
+        setRound(nextRound);
+        
         const newIconsForRound = shuffleArray(ALL_ICONS).slice(0, 9);
         setGameIcons(newIconsForRound);
         setPlayerGuess([]);
         setGameState('watching');
 
         const nextIcon = newIconsForRound[Math.floor(Math.random() * newIconsForRound.length)];
-        const uniqueRounds = currentSequence.filter((val, i, arr) => arr.indexOf(val) === i).length;
         
-        // --- CORRECTED MULTI-FLASH LOGIC ---
         let numberOfFlashes = 1;
         const randomChance = Math.random();
-        // Probability of multi-flashes increases with each unique round
-        if (uniqueRounds > 4 && randomChance < 0.20) { // 20% chance of triple flash
+        if (nextRound > 4 && randomChance < 0.25) { // 25% chance of triple flash
             numberOfFlashes = 3;
-        } else if (uniqueRounds > 1 && randomChance < 0.40) { // 40% chance of double flash
+        } else if (nextRound > 1 && randomChance < 0.50) { // 50% chance of double flash
             numberOfFlashes = 2;
         }
 
@@ -70,7 +73,7 @@ const CodeSequenceGame = ({ onGameEnd }) => {
         
         setSequence(newSequence);
         flashSequence(newSequence);
-    }, []);
+    }, [round, flashSequence]); // Dependency on `round` and `flashSequence` is crucial
 
     const handlePlayerInput = (icon) => {
         if (gameState !== 'playing') return;
@@ -92,10 +95,9 @@ const CodeSequenceGame = ({ onGameEnd }) => {
     };
 
     const finishGame = useCallback(() => {
-        const roundsCompleted = Math.max(0, sequence.filter((val, index, arr) => arr.indexOf(val) === index).length - 1);
-        const score = Math.min(roundsCompleted * 10, 100);
+        const score = Math.min(round * 10, 100);
         setTimeout(() => onGameEnd(score), 1200);
-    }, [sequence, onGameEnd]);
+    }, [round, onGameEnd]);
 
     useEffect(() => {
         if (gameState === 'finished') {
@@ -105,6 +107,7 @@ const CodeSequenceGame = ({ onGameEnd }) => {
 
     const startGame = () => {
         setSequence([]);
+        setRound(0); // Reset round counter
         setGameState('starting');
         setTimeout(() => {
             startNewRound([]);
@@ -117,9 +120,9 @@ const CodeSequenceGame = ({ onGameEnd }) => {
                 <h2 className="text-3xl font-bold font-naruto text-orange-400 mb-4">Code Sequence: EXTREME</h2>
                 <div className="text-left space-y-3 mb-6 max-w-sm mx-auto">
                     <p><strong>Goal:</strong> Repeat the sequence perfectly. It gets longer and <strong className="text-red-400">FASTER</strong> each round.</p>
-                    <p className="font-bold text-yellow-300">⚠️ NEW RULE #1: The icon pads will shuffle and change after every successful round.</p>
-                    <p className="font-bold text-yellow-300">⚠️ NEW RULE #2: An icon might flash multiple times (2x or even 3x). You must press it for each flash!</p>
-                    <p><strong>Scoring:</strong> You get <strong className="text-yellow-300">10 points</strong> for every unique icon round you complete (max 100).</p>
+                    <p className="font-bold text-yellow-300">⚠️ RULE #1: The icon pads will shuffle and change after every successful round.</p>
+                    <p className="font-bold text-yellow-300">⚠️ RULE #2: An icon might flash multiple times (2x or 3x). You must press it for each flash!</p>
+                    <p><strong>Scoring:</strong> You get <strong className="text-yellow-300">10 points</strong> for every round you complete (max 100).</p>
                 </div>
                 <button 
                     onClick={startGame}
@@ -140,7 +143,7 @@ const CodeSequenceGame = ({ onGameEnd }) => {
                 {gameState === 'starting' && 'Get Ready...'}
             </h2>
             <p className="text-lg mb-4">
-                Round: <span className="font-bold text-white">{sequence.filter((val, index, arr) => arr.indexOf(val) === index).length}</span>
+                Round: <span className="font-bold text-white">{round}</span>
             </p>
             
             <div className="grid grid-cols-3 gap-4 w-full max-w-xs">
@@ -162,7 +165,7 @@ const CodeSequenceGame = ({ onGameEnd }) => {
             {gameState === 'finished' && (
                 <div className="mt-6 text-center">
                     <h3 className="text-2xl font-bold text-red-500 animate-pulse">Sequence Broken!</h3>
-                    <p className="text-lg">You completed {Math.max(0, sequence.filter((val, index, arr) => arr.indexOf(val) === index).length - 1)} rounds.</p>
+                    <p className="text-lg">You completed {round} rounds.</p>
                     <p className="text-lg">Submitting your score...</p>
                 </div>
             )}
