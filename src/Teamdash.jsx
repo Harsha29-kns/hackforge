@@ -115,71 +115,62 @@ const QrModal = ({ isOpen, onClose, qrUrl, name }) => (
 );
 
 const AttendanceModal = ({ isOpen, onClose, team, attendanceIcon }) => {
-    const [openAccordion, setOpenAccordion] = useState(null);
-    const toggleAccordion = (memberId) => setOpenAccordion(openAccordion === memberId ? null : memberId);
     const getAttendanceStatus = (member, round) => member?.attendance?.find(a => a.round === round)?.status || null;
-    const rounds = [1, 2, 3, 4];
+    const rounds = [1, 2, 3, 4, 5, 6, 7];
 
     return (
         <Modal isOpen={isOpen} onRequestClose={onClose} style={{...customModalStyles, content: {...customModalStyles.content, width: '850px'}}} contentLabel="Attendance Tracker" appElement={document.getElementById('root') || undefined}>
-            <div className="flex justify-between items-center mb-4">
-                <div className="flex items-center gap-3">
-                    <span className="text-3xl animate-pulse">📊</span>
-                    <h2 className="text-2xl font-bold text-orange-400 font-naruto">ATTENDANCE TRACKER</h2>
+            <div className="flex justify-between items-center mb-6">
+                <div className="flex items-center gap-4">
+                    <span className="text-4xl">📊</span>
+                    <div>
+                        <h2 className="text-2xl font-bold text-orange-400 font-naruto">ATTENDANCE TRACKER</h2>
+                        <p className="text-gray-400">Team: {team?.teamname}</p>
+                    </div>
                 </div>
                 <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors text-3xl font-light">×</button>
             </div>
             <div className="max-h-[60vh] overflow-y-auto pr-2">
                 {team ? (
-                    <>
-                        {/* Lead */}
-                        <div className="bg-gray-800 rounded-lg mb-2 overflow-hidden">
-                            <button onClick={() => toggleAccordion('lead')} className="w-full flex justify-between items-center px-4 py-3 text-left hover:bg-gray-700 transition">
-                                <span className="font-medium text-orange-400">{team.name} (Lead)</span>
-                                <svg className={`w-5 h-5 text-gray-400 transform transition-transform ${openAccordion === 'lead' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                            </button>
-                            <div className={`transition-all duration-300 ease-in-out px-4 border-t border-gray-700 ${openAccordion === 'lead' ? 'max-h-40 py-4' : 'max-h-0 overflow-hidden'}`}>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 justify-center">
-                                    {rounds.map(round => {
-                                        const status = getAttendanceStatus(team.lead, round);
-                                        return (
-                                            <div key={round} className="text-center p-2 bg-gray-900/50 rounded-md" title={`Round ${round}: ${status || 'Not Marked'}`}>
-                                                <p className="text-sm text-gray-400">Round {round}</p>
-                                                <div className="mt-2 text-3xl flex justify-center">{attendanceIcon(status)}</div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
+                    <div className="space-y-4">
+                        {/* Table Header */}
+                        <div className="grid grid-cols-12 gap-4 px-4 text-sm font-semibold text-gray-400 uppercase">
+                            <div className="col-span-5">Member</div>
+                            {rounds.map(round => (
+                                <div key={`header-${round}`} className="col-span-1 text-center">R{round}</div>
+                            ))}
                         </div>
-                        {/* Team Members */}
-                        {team.teamMembers.map((member, idx) => {
-                            const memberId = member.registrationNumber || idx;
-                            const isOpen = openAccordion === memberId;
-                            return (
-                                <div key={memberId} className="bg-gray-800 rounded-lg mb-2 overflow-hidden">
-                                    <button onClick={() => toggleAccordion(memberId)} className="w-full flex justify-between items-center px-4 py-3 text-left hover:bg-gray-700 transition">
-                                        <span className="font-medium">{member.name}</span>
-                                        <svg className={`w-5 h-5 text-gray-400 transform transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                                    </button>
-                                    <div className={`transition-all duration-300 ease-in-out px-4 border-t border-gray-700 ${isOpen ? 'max-h-40 py-4' : 'max-h-0 overflow-hidden'}`}>
-                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 justify-center">
-                                            {rounds.map(round => {
-                                                const status = getAttendanceStatus(member, round);
-                                                return (
-                                                    <div key={round} className="text-center p-2 bg-gray-900/50 rounded-md" title={`Round ${round}: ${status || 'Not Marked'}`}>
-                                                        <p className="text-sm text-gray-400">Round {round}</p>
-                                                        <div className="mt-2 text-3xl flex justify-center">{attendanceIcon(status)}</div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
+
+                        {/* Lead Row */}
+                        <div className="grid grid-cols-12 gap-4 items-center bg-yellow-500/10 p-4 rounded-lg border border-yellow-500/30">
+                            <div className="col-span-5">
+                                <p className="font-bold text-yellow-300">{team.name}</p>
+                                <p className="text-xs text-yellow-400/70">Team Lead</p>
+                            </div>
+                            {rounds.map(round => (
+                                <div key={`lead-round-${round}`} className="col-span-1 flex justify-center" title={`Round ${round}: ${getAttendanceStatus(team.lead, round) || 'Not Marked'}`}>
+                                    {attendanceIcon(getAttendanceStatus(team.lead, round))}
                                 </div>
-                            );
-                        })}
-                    </>
-                ) : <p className="text-center text-gray-400 py-4">Loading data...</p>}
+                            ))}
+                        </div>
+
+                        {/* Member Rows */}
+                        {team.teamMembers.map((member, idx) => (
+                            <div key={idx} className="grid grid-cols-12 gap-4 items-center bg-gray-800/60 p-4 rounded-lg">
+                                <div className="col-span-5">
+                                    <p className="font-semibold text-white">{member.name}</p>
+                                </div>
+                                {rounds.map(round => (
+                                    <div key={`member-${idx}-round-${round}`} className="col-span-1 flex justify-center" title={`Round ${round}: ${getAttendanceStatus(member, round) || 'Not Marked'}`}>
+                                        {attendanceIcon(getAttendanceStatus(member, round))}
+                                    </div>
+                                ))}
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <p className="text-center text-gray-400 py-8">Loading team attendance data...</p>
+                )}
             </div>
         </Modal>
     );
@@ -913,7 +904,7 @@ function Teamdash() {
                                     {team.stopTheBarPlayed ? (
                                         <span className="text-lg">Timing Score: {team.stopTheBarScore}</span>
                                     ) : isBarGameOpen ? (
-                                        <span className="text-lg">Timing Challenge</span>
+                                        <span className="text-lg">Flash Game Challenge</span>
                                     ) : (
                                         <>
                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>

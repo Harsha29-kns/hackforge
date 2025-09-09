@@ -5,7 +5,7 @@ import Attd from './attdence';
 import Teamdash from './Teamdash';
 import Review from './Review';
 import TeamMarks from './TeamMarks';
-import AttdDetail from './AttdDetail';
+import AttdenceDetail from './AttdenceDetail';
 import Instructions from "./Instructions";
 import AdminControls from './AdminControls'
 import Landing from './Landing';
@@ -14,14 +14,14 @@ import GameLeaderboard from './GameLeaderboard';
 function App() {
     return (
         <Routes >
-        <Route path='/' element={<Landing/>}/>
+        <Route path='/' element={<Instructions/>}/>
+        <Route path='/home' element={<Landing/>}/>
         <Route path='/admin-login' element={<Admin/>}/>
-        <Route path='/attd' element={<Attd/>}/>
+        <Route path='/attdence' element={<Attd/>}/>
         <Route path='/teamlogin' element={<Teamdash/>}/>
         <Route path='/review' element={<Review/>}/>
         <Route path='/TeamMarks' element={<TeamMarks/>}/>
-        <Route path='/attdetail' element={<AttdDetail/>}/>
-        <Route path='/instructions' element={<Instructions/>}/>
+        <Route path='/attdencedetails' element={<AttdenceDetail/>}/>
         <Route path='/admin-controls' element={<AdminControls />} />
         <Route path='/game-leaderboard' element={<GameLeaderboard />} />
       </Routes>           

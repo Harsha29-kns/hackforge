@@ -1,72 +1,163 @@
-.landing-container {
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400&display=swap');
+
+.not-found-container {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  justify-content: center;
   min-height: 100vh;
-  background: linear-gradient(to bottom right, #1a202c, #2d3748); /* Dark gradient background */
-  color: #e2e8f0; /* Light gray text */
-  font-family: 'Arial', sans-serif;
+  background-color: #000000;
+  color: #e0e0e0;
+  font-family: 'Roboto', sans-serif;
+  text-align: center;
+  padding: 2rem;
+  overflow: hidden;
+  position: relative;
+}
+
+.noise-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url('data:image/svg+xml,...'); /* Add a subtle noise texture if desired */
+  opacity: 0.05;
+  pointer-events: none;
+}
+
+.content-wrapper {
+  background: rgba(10, 10, 10, 0.6);
+  border: 1px solid rgba(255, 165, 0, 0.2);
+  border-radius: 1.5rem;
+  padding: 2.5rem 3rem;
+  max-width: 700px;
+  width: 100%;
+  box-shadow: 0 0 30px rgba(255, 165, 0, 0.1);
+  backdrop-filter: blur(10px);
+  z-index: 1;
+}
+
+.icon-container {
+  margin-bottom: 1.5rem;
+}
+
+.main-icon {
+  color: #ffa500;
+  filter: drop-shadow(0 0 10px #ffa500);
+}
+
+.main-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 3rem;
+  font-weight: 700;
+  color: #ffa500;
+  letter-spacing: 0.2rem;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+  text-shadow: 0 0 15px rgba(255, 165, 0, 0.5);
+}
+
+.subtitle {
+  font-size: 1.2rem;
+  color: #b0b0b0;
+  margin-bottom: 2rem;
+}
+
+.message-box {
+  background: rgba(255, 165, 0, 0.05);
+  border-left: 4px solid #ffa500;
+  padding: 1rem 1.5rem;
+  border-radius: 0.5rem;
+  margin-bottom: 2rem;
+  text-align: left;
+}
+
+.message-box p {
+  margin: 0.5rem 0;
+}
+
+.highlight {
+  color: #ffc966;
+  font-weight: bold;
+}
+
+.countdown-container {
+  margin-bottom: 2.5rem;
+}
+
+.countdown-title {
+  display: flex;
   align-items: center;
   justify-content: center;
-  text-align: center;
-  padding: 20px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.5rem;
+  color: #e0e0e0;
+  margin-bottom: 1.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1rem;
 }
 
-.landing-header {
-  margin-bottom: 40px;
+.countdown-icon {
+  margin-right: 0.75rem;
+  color: #ffa500;
 }
 
-.landing-title {
-  font-size: 4em;
-  color: #e53e3e; /* Red for 404 */
-  margin-bottom: 10px;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+.timer {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
 }
 
-.landing-subtitle {
-  font-size: 1.5em;
-  color: #cbd5e0;
-}
-
-.landing-main {
-  flex-grow: 1;
+.timer-segment {
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 1rem;
+  border-radius: 0.75rem;
+  min-width: 80px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.landing-section {
-  background-color: rgba(45, 55, 72, 0.8); /* Slightly lighter, semi-transparent background */
-  padding: 30px 50px;
-  border-radius: 10px;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
-  max-width: 600px;
-  width: 100%;
+.timer-number {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #ffffff;
 }
 
-.landing-section h2 {
-  font-size: 2em;
-  color: #a0aec0;
-  margin-bottom: 20px;
+.timer-label {
+  font-size: 0.8rem;
+  color: #b0b0b0;
+  text-transform: uppercase;
+  letter-spacing: 0.1rem;
 }
 
-.landing-section p {
-  font-size: 1.1em;
-  line-height: 1.6;
-  margin-bottom: 30px;
-}
-.landing-button {
-  background-color: #e53e3e; /* Red button */
-  color: white;
-  padding: 15px 30px;
-  font-size: 1.2em;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
+.home-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  background-color: #ffa500;
+  color: #000;
+  font-weight: bold;
+  padding: 0.75rem 2rem;
+  border-radius: 0.5rem;
   text-decoration: none;
-  transition: background-color 0.3s ease, transform 0.2s ease;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 15px rgba(255, 165, 0, 0.4);
 }
-.landing-button:hover {
-  background-color: #c53030; /* Darker red on hover */
-  transform: translateY(-2px);
+
+.home-button:hover {
+  background-color: #ffc966;
+  transform: translateY(-3px);
+  box-shadow: 0 0 25px rgba(255, 165, 0, 0.7);
+}
+
+.footer-credit {
+  position: absolute;
+  bottom: 1rem;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.3);
+  z-index: 1;
 }

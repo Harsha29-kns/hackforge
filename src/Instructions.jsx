@@ -1,158 +1,161 @@
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { ShieldCheck, QrCode, Gamepad2, HelpCircle, UserCheck, Layers } from 'lucide-react';
 import kalasalingam from "/public/kalasalingam.png";
 import score from "/public/scorecraft.jpg";
-// Importing the GIF from your project files
 import narutoGif from "/public/W4W.gif";
-
-const narutoBgImage = "https://images.alphacoders.com/605/605592.png";
 
 const narutoFontStyle = {
     fontFamily: "'Ninja Naruto', sans-serif",
 };
 
-// --- Animation Variants for Staggered Effect ---
-const listContainerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.25,
+// --- Animation Variants ---
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: { staggerChildren: 0.1, delayChildren: 0.3 },
     },
-  },
 };
 
-const listItemVariants = {
-  hidden: { opacity: 0, x: -50 },
-  visible: {
-    opacity: 1,
-    x: 0,
-    transition: {
-      type: 'spring',
-      stiffness: 120,
+const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+        y: 0,
+        opacity: 1,
+        transition: { type: 'spring', stiffness: 100 },
     },
-  },
 };
 
+const iconVariants = {
+    hover: {
+        scale: 1.2,
+        rotate: 10,
+        transition: { type: 'spring', stiffness: 300 },
+    }
+};
+
+const Section = ({ icon, title, children }) => (
+    <motion.div variants={itemVariants} className="bg-gray-800/50 backdrop-blur-md p-6 rounded-xl border border-gray-700">
+        <div className="flex items-center gap-4 mb-4">
+            <motion.div variants={iconVariants} whileHover="hover" className="text-orange-400">
+                {icon}
+            </motion.div>
+            <h3 className="text-2xl font-bold text-orange-400">{title}</h3>
+        </div>
+        <div className="space-y-3 text-gray-300 pl-2 border-l-2 border-orange-500/30">
+            {children}
+        </div>
+    </motion.div>
+);
 
 function Instructions() {
     const nav = useNavigate();
 
-    const eventInstructions = [
-        "Your team password will be provided by an admin. Do not share it with other teams.",
-        "You will receive a random domain at the start. This domain will be used for all challenges.",
-        "If you encounter any issues, use the 'Request Assistance' feature in your Team Panel. Our support team will reach you.",
-        "For any login problems, please contact the nearest club member. They are stationed in each sector to help you.",
-        "Keep your QR codes ready for attendance. This is crucial for tracking your presence at checkpoints."
-    ];
-
     return (
         <div 
-            className="home relative w-full min-h-screen py-12 px-4 flex justify-center items-center overflow-y-auto"
-            style={{
-                backgroundImage: `url('${narutoBgImage}')`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                backgroundAttachment: 'fixed',
-            }}
+            className="relative w-full min-h-screen py-12 px-4 flex items-center overflow-y-auto bg-black"
         >
-            <div className="absolute inset-0 bg-black/70 backdrop-blur-md"></div>
-
-            {/* NEW: Main container with a two-column grid layout for larger screens */}
-            <div className="relative z-10 w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-5 gap-12 items-center">
+            <div 
+                className="absolute inset-0 bg-cover bg-center opacity-20"
+                style={{ backgroundImage: `url('https://images.alphacoders.com/605/605592.png')` }}
+            ></div>
+            <div className="absolute inset-0 bg-black/60"></div>
+            
+            <div className="relative z-10 w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
                 
-                {/* --- Left Column: Naruto GIF --- */}
-                <motion.div 
-                    className="hidden lg:flex justify-center items-center lg:col-span-2"
-                    initial={{ opacity: 0, x: -100 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 1, type: 'spring' }}
-                >
-                    <img 
-                        src={narutoGif} 
-                        alt="Naruto scrolling through a scroll" 
-                        className="rounded-2xl border-4 border-orange-500/40 shadow-2xl shadow-orange-500/20 w-full max-w-md"
-                    />
-                </motion.div>
-
-                {/* --- Right Column: Page Content --- */}
-                <div className="lg:col-span-3 flex flex-col gap-10">
-                    {/* Header */}
+                {/* --- Left Column: Header and GIF --- */}
+                <div className="lg:sticky top-12 flex flex-col gap-10">
                     <motion.div 
-                        className="p-8 rounded-2xl bg-gray-900/70 border-2 border-orange-500/50 shadow-2xl w-full text-center backdrop-blur-md"
-                        initial={{ y: -100, opacity: 0 }}
+                        className="p-8 rounded-2xl bg-gray-900/70 border-2 border-orange-500/50 shadow-2xl text-center backdrop-blur-md"
+                        initial={{ y: -50, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
-                        transition={{ duration: 0.8, type: "spring", stiffness: 100, delay: 0.2 }}
+                        transition={{ duration: 0.8, type: "spring" }}
                     >
-                        <div className="w-full flex justify-center items-center gap-6 mb-6">
+                        <div className="w-full flex justify-center items-center gap-6 mb-4">
                             <img src={kalasalingam} className="w-20 h-20 object-contain bg-white/80 rounded-full p-1" alt="Kalasalingam Logo" />
                             <img src={score} className="w-20 h-20 object-cover rounded-full border-2 border-orange-400" alt="Score Logo" />
                         </div>
-                        <h2 className="text-2xl mt-2 text-gray-300 tracking-wider">Scorecraft KARE Presents</h2>
-                        
+                        <h2 className="text-xl text-gray-300 tracking-wider">Scorecraft KARE Presents</h2>
                         <motion.h1 
-                            className="text-6xl md:text-7xl font-black text-orange-500 my-4 tracking-widest"
+                            className="text-6xl md:text-7xl font-black text-orange-500 my-3 tracking-widest"
                             style={narutoFontStyle}
-                            initial={{ scale: 1.5, opacity: 0 }}
+                            initial={{ scale: 1.2, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
-                            transition={{ duration: 0.7, delay: 0.5, ease: "easeOut" }}
+                            transition={{ duration: 0.7, delay: 0.3, ease: "easeOut" }}
                         >
                             HackForge
                         </motion.h1>
-
-                        <p className="text-lg text-gray-300">Welcome, shinobi! Here are the scrolls of knowledge for your mission.</p>
                     </motion.div>
-
-                    {/* Instructions & Action Button */}
                     <motion.div 
-                        className="p-8 bg-gray-900/80 text-white rounded-2xl shadow-xl border-2 border-orange-500/30 backdrop-blur-md w-full"
-                        initial={{ opacity: 0, y: 50 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.8, duration: 0.8 }}
+                        className="flex justify-center items-center"
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.7, delay: 0.5, type: 'spring' }}
                     >
-                        <h1 className="text-3xl font-extrabold mb-6 text-center text-orange-400" style={narutoFontStyle}>
-                            Event Process
-                        </h1>
-                        
-                        <motion.ul 
-                            className="text-lg text-gray-200 space-y-4 mb-10"
-                            variants={listContainerVariants}
-                            initial="hidden"
-                            animate="visible"
-                        >
-                            {eventInstructions.map((text, idx) => (
-                                <motion.li key={idx} className="flex items-start gap-3" variants={listItemVariants}>
-                                    <span className="text-orange-400 font-bold text-xl pt-1">🍥</span>
-                                    <p>{text}</p>
-                                </motion.li>
-                            ))}
-                        </motion.ul>
-
-                        <div className="flex justify-center">
-                            <motion.button 
-                                className="bg-orange-500 text-white border-2 border-orange-600 py-4 px-10 rounded-lg shadow-lg text-xl font-bold hover:bg-orange-600 transition-all duration-300 w-full md:w-auto"
-                                whileHover={{ 
-                                    scale: 1.1,
-                                    boxShadow: "0px 0px 20px rgba(249, 115, 22, 0.7)",
-                                    textShadow: "0px 0px 8px rgba(255, 255, 255, 0.7)",
-                                    transition: { duration: 0.3 }
-                                }}
-                                whileTap={{ scale: 0.9 }}
-                                animate={{
-                                    scale: [1, 1.02, 1],
-                                    transition: {
-                                        duration: 2.5,
-                                        repeat: Infinity,
-                                        ease: "easeInOut",
-                                    }
-                                }}
-                                onClick={() => nav("/teamlogin")}
-                            >
-                                Proceed to Team Login
-                            </motion.button>
-                        </div>
+                        <img 
+                            src={narutoGif} 
+                            alt="Naruto Mission Scroll" 
+                            className="rounded-2xl border-4 border-orange-500/40 shadow-2xl shadow-orange-500/20 w-full max-w-md"
+                        />
                     </motion.div>
                 </div>
+
+                {/* --- Right Column: Instructions --- */}
+                <motion.div 
+                    className="flex flex-col gap-8"
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                >
+                    <Section icon={<ShieldCheck size={32} />} title="General Rules & Credentials">
+                        <p><strong>ID Cards are Mandatory:</strong> All participants must wear their official college ID cards at all times.</p>
+                        <p><strong>Team Password:</strong> Your unique team password will be provided by an admin after verification. Keep it secret and do not share it.</p>
+                        <p><strong>Login Issues:</strong> For any login problems, find the nearest club member in your assigned sector for immediate assistance.</p>
+                    </Section>
+                    
+                    <Section icon={<QrCode size={32} />} title="Attendance Protocol">
+                        <p><strong>Unique QR Codes:</strong> Each team member receives a unique QR code after verification. This is your digital pass for the event.</p>
+                        <p><strong>7 Attendance Rounds:</strong> Attendance will be marked at 7 checkpoints throughout the event. It is crucial to be present for each one.</p>
+                        <p><strong>Keep it Ready:</strong> Have your QR code accessible on your mobile device at all times for quick scanning by the organizers.</p>
+                    </Section>
+
+                    {/* --- UPDATED DOMAIN SELECTION SECTION --- */}
+                    <Section icon={<Layers size={32} />} title="Domain & Problem Selection">
+                        <p><strong>Explore the Sets:</strong> Domains are grouped into 3 distinct sets. Your team lead can select any set to view its problem statements.</p>
+                        <p><strong>Review Problem Statements:</strong> Inside a set, you can browse through the available problem statements. Take your time to choose the one that best fits your team's skills.</p>
+                        <p><strong>Flexible Choice:</strong> If you're not satisfied with the problems in one set, simply click 'Cancel' to return and explore a different set.</p>
+                        <p><strong>Confirm Your Mission:</strong> Once you've chosen a problem statement and click 'Confirm', your domain and problem are locked in. This choice is final!</p>
+                    </Section>
+
+                    <Section icon={<Gamepad2 size={32} />} title="Side-Quest Game Rules">
+                        <p><strong>Memory Flip Challenge:</strong> Match all pairs of cards as quickly as you can. Your score is based on speed and accuracy.</p>
+                        <p><strong>Number Puzzle:</strong> A classic sliding puzzle. Solve it in the fewest moves and the shortest time for a higher score.</p>
+                        <p><strong>Timing Challenge:</strong> Test your reflexes! Stop the moving bar at the perfect moment to score maximum points.</p>
+                        <p><strong>One Shot Only:</strong> Each game can be played only once per team. Make it count!</p>
+                    </Section>
+                    
+                    <Section icon={<HelpCircle size={32} />} title="Requesting Assistance">
+                        <p><strong>Technical Issues:</strong> If you face any technical problems with the platform, use the "Request Help" button in your dashboard.</p>
+                        <p><strong>Describe Your Issue:</strong> Provide a clear and concise description of your problem. Our support team will be notified and will come to your location.</p>
+                        <p><strong>Check the Intel Feed:</strong> The status of your request will be updated in the "Intel Feed" section on your dashboard.</p>
+                    </Section>
+                    
+                    <motion.div variants={itemVariants} className="flex justify-center mt-4">
+                        <motion.button 
+                            className="bg-orange-500 text-white border-2 border-orange-600 py-4 px-10 rounded-lg shadow-lg text-xl font-bold hover:bg-orange-600 transition-all duration-300 w-full"
+                            whileHover={{ 
+                                scale: 1.05,
+                                boxShadow: "0px 0px 20px rgba(249, 115, 22, 0.7)",
+                                textShadow: "0px 0px 8px rgba(255, 255, 255, 0.7)",
+                            }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => nav("/home")}
+                        >
+                            Proceed to Team Login
+                        </motion.button>
+                    </motion.div>
+                </motion.div>
             </div>
         </div>
     );
