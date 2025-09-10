@@ -22,6 +22,10 @@ const RankListItem = ({ team, rank }) => (
                 <p className="text-xs text-gray-500">Review 2</p>
                 <p className="font-semibold text-white">{team.SecoundReviewScore || 0}</p>
             </div>
+            <div>
+                <p className="text-xs text-gray-500">Review 3</p>
+                <p className="font-semibold text-white">{team.ThirdReviewScore || 0}</p>
+            </div>
         </div>
         <p className="text-lg font-bold text-white w-24 text-center md:text-right">{team.FinalScore || 0} pts</p>
     </div>
@@ -105,6 +109,10 @@ function TeamMarks() {
                                             <div>
                                                 <p className="text-xs text-gray-500">Review 2</p>
                                                 <p className="font-semibold text-sm text-white">{team.SecoundReviewScore || 0}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-gray-500">Review 3</p>
+                                                <p className="font-semibold text-sm text-white">{team.ThirdReviewScore || 0}</p>
                                             </div>
                                         </div>
                                         {/* --- END: Detailed Score Breakdown --- */}

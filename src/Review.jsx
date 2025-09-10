@@ -1,23 +1,28 @@
 import axios from "axios";
 import { useEffect, useState, useMemo } from "react";
-import api from "./api";
+import api from "./api.js";
 
 // --- Rubric Data (No Changes) ---
 const firstReviewRubric = {
-    implementationFunctionality: { criteria: "Implementation & Functionality", marks: "", max: 15 },
-    innovationCreativity: { criteria: "Innovation & Creativity", marks: "", max: 10 },
-    userExperienceDesign: { criteria: "User Experience & Design", marks: "", max: 10 },
-    impactPracticality: { criteria: "Impact & Practicality", marks: "", max: 10 },
-    presentationCommunication: { criteria: "Presentation & Communication", marks: "", max: 10 },
-    completionEffort: { criteria: "Completion & Effort", marks: "", max: 5 }
-}; 
+    codeQuality: { criteria: "Code Quality & Standards", marks: "", max: 10 },
+    ideaOriginality: { criteria: "Idea Originality", marks: "", max: 5 },
+    prototypeCompletion: { criteria: "Prototype Completion", marks: "", max: 5 },
+    teamworkCollaboration: { criteria: "Teamwork & Collaboration", marks: "", max: 5 },
+};
 
 const secondReviewRubric = {
-    technicalExcellence: { criteria: "Technical Excellence", marks: "", max: 20 },
-    scalabilityAndFutureScope: { criteria: "Scalability & Future Scope", marks: "", max: 15 },
-    finalProductMarketFit: { criteria: "Final Product-Market Fit", marks: "", max: 15 },
-    finalPitchAndDemo: { criteria: "Final Pitch & Demo", marks: "", max: 10 }
-}; 
+    backendArchitecture: { criteria: "Backend Architecture & API Design", marks: "", max: 10 },
+    frontendInterface: { criteria: "Frontend Interface & Responsiveness", marks: "", max: 10 },
+    integrationDeployment: { criteria: "Integration & Deployment", marks: "", max: 10 },
+    documentationClarity: { criteria: "Documentation & Clarity", marks: "", max: 5 },
+};
+
+const thirdReviewRubric = {
+    problemImpact: { criteria: "Problem Relevance & Impact", marks: "", max: 10 },
+    innovationFactor: { criteria: "Innovation Factor", marks: "", max: 10 },
+    scalabilityViability: { criteria: "Scalability & Viability", marks: "", max: 10 },
+    demoExecution: { criteria: "Demo Execution & Delivery", marks: "", max: 10 },
+};
 
 
 // --- SVG Icons for UI Enhancement ---
@@ -45,7 +50,7 @@ function Review() {
     const sectors = ["Naruto", "Sasuke", "Itachi"];
 
     useEffect(() => {
-        const currentRubric = reviewRound === 1 ? firstReviewRubric : secondReviewRubric;
+        const currentRubric = reviewRound === 1 ? firstReviewRubric : reviewRound === 2 ? secondReviewRubric : thirdReviewRubric;
         setScores(currentRubric);
     }, [reviewRound]);
     
@@ -83,7 +88,7 @@ function Review() {
 
     // --- HANDLER FUNCTIONS (No Changes to Logic) ---
     const resetScoreMarks = () => {
-        const currentRubric = reviewRound === 1 ? firstReviewRubric : secondReviewRubric;
+        const currentRubric = reviewRound === 1 ? firstReviewRubric : reviewRound === 2 ? secondReviewRubric : thirdReviewRubric;
         setScores(currentRubric);
     };
 
@@ -133,11 +138,12 @@ function Review() {
         const payload = {
             score: calculateTotalMarks(),
             ...(reviewRound === 1 && { FirstReview: scores }),
-            ...(reviewRound === 2 && { SecoundReview: scores })
+            ...(reviewRound === 2 && { SecoundReview: scores }),
+            ...(reviewRound === 3 && { ThirdReview: scores })
         };
         
         try {
-            const endpoint = reviewRound === 1 ? 'score1' : 'score';
+            const endpoint = reviewRound === 1 ? 'score1' : reviewRound === 2 ? 'score' : 'score3';
             await axios.post(`${api}/Hack/team/${endpoint}/${currentTeam._id}`, payload);
             
             const updatedTeams = [...teams];
@@ -146,9 +152,12 @@ function Review() {
                 if (reviewRound === 1) {
                     updatedTeams[teamIndexInAllTeams].FirstReviewScore = calculateTotalMarks();
                     updatedTeams[teamIndexInAllTeams].FirstReview = true;
-                } else {
+                } else if (reviewRound === 2) {
                     updatedTeams[teamIndexInAllTeams].SecoundReviewScore = calculateTotalMarks();
                     updatedTeams[teamIndexInAllTeams].SecoundReview = true;
+                } else if (reviewRound === 3) {
+                    updatedTeams[teamIndexInAllTeams].ThirdReviewScore = calculateTotalMarks();
+                    updatedTeams[teamIndexInAllTeams].ThirdReview = true;
                 }
                 setTeams(updatedTeams);
             }
@@ -213,7 +222,7 @@ function Review() {
     if (loading) return <div className="h-screen flex items-center justify-center bg-[#0a091e] text-white text-2xl animate-pulse">Loading Terminal Data...</div>;
 
     const currentTeam = currentTeamIndex !== null ? filteredTeams[currentTeamIndex] : null;
-    const isAlreadyMarked = currentTeam ? (reviewRound === 1 ? currentTeam.FirstReview : currentTeam.SecoundReview) : false;
+    const isAlreadyMarked = currentTeam ? (reviewRound === 1 ? currentTeam.FirstReview : reviewRound === 2 ? currentTeam.SecoundReview : currentTeam.ThirdReview) : false;
 
     // --- NEW: Redesigned Main Two-Panel Layout ---
     return (
@@ -248,7 +257,7 @@ function Review() {
                     <div className="flex-grow overflow-y-auto px-4 pb-4 space-y-2">
                         {filteredTeams.length > 0 ? (
                             filteredTeams.map((team, index) => {
-                                const isMarked = reviewRound === 1 ? team.FirstReview : team.SecoundReview;
+                                const isMarked = reviewRound === 1 ? team.FirstReview : reviewRound === 2 ? team.SecoundReview : team.ThirdReview;
                                 return (
                                     <button
                                         key={team._id}
@@ -273,6 +282,7 @@ function Review() {
                             <select value={reviewRound} onChange={(e) => { setReviewRound(Number(e.target.value)); setCurrentTeamIndex(null); }} className="px-4 py-2 rounded-lg bg-white/5 font-semibold appearance-none focus:outline-none focus:ring-2 focus:ring-purple-500">
                                 <option value={1}>First Review</option>
                                 <option value={2}>Second Review</option>
+                                <option value={3}>Third Review</option>
                             </select>
                          </div>
                         <button onClick={() => { setIsAuthenticated(false); sessionStorage.removeItem("password"); }} className="flex items-center gap-2 px-4 py-2 bg-red-600/80 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors">
@@ -283,7 +293,7 @@ function Review() {
                     {currentTeam ? (
                         <div className="flex-grow overflow-y-auto p-6 md:p-8">
                             <h1 className="text-3xl font-bold mb-1 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">{currentTeam.teamname}</h1>
-                            <p className="text-gray-400 mb-6">Evaluating for <strong className="text-gray-200">{reviewRound === 1 ? 'First' : 'Second'} Review</strong></p>
+                            <p className="text-gray-400 mb-6">Evaluating for <strong className="text-gray-200">{reviewRound === 1 ? 'First' : reviewRound === 2 ? 'Second' : 'Third'} Review</strong></p>
 
                             <div className="space-y-3">
                                 {Object.keys(scores).map((key) => (
@@ -330,3 +340,4 @@ function Review() {
 }
 
 export default Review;
+
