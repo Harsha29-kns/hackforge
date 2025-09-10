@@ -51,7 +51,7 @@ function NotFound() {
           <HardDrive size={60} className="main-icon" />
         </motion.div>
         
-        <h1 className="main-title">Under Construction</h1>
+        <h1 className="main-title">Under Maintenance</h1>
         <p className="subtitle">The Team Dashboard is currently being forged for the Hackathon.</p>
         
         <div className="message-box">
