@@ -142,7 +142,7 @@ function Instructions() {
                     <Section icon={<Gamepad2 size={32} />} title="Side-Quest Game Rules">
                         <p><strong>Memory Flip Challenge:</strong> Match all pairs of cards as quickly as you can. Your score is based on speed and accuracy.</p>
                         <p><strong>Number Puzzle:</strong> A classic sliding puzzle. Solve it in the fewest moves and the shortest time for a higher score.</p>
-                        <p><strong>Timing Challenge:</strong> Test your reflexes! Stop the moving bar at the perfect moment to score maximum points.</p>
+                        <p><strong>Flash game Challenge:</strong> Repeat the sequence perfectly. It gets longer and faster each round.</p>
                         <p><strong>One Shot Only:</strong> Each game can be played only once per team. Make it count!</p>
                     </Section>
                     
