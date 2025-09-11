@@ -7,7 +7,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import Papa from "papaparse";
 import JSZip from 'jszip';
-import { Gem } from "lucide-react";
+import { Gem, ArrowLeft, ArrowRight } from "lucide-react";
 
 const socket = io(api);
 
@@ -57,16 +57,12 @@ const StatCard = ({ title, value, color }) => (
         <p className="text-4xl font-bold text-white">{value}</p>
     </div>
 );
+
 const DomainMonitor = ({ teams, domains, onResetDomains }) => {
     const [isLoading, setIsLoading] = useState(false);
-
-    // Only count verified teams that haven't selected a domain as "pending"
     const teamsWithDomain = teams.filter(team => team.Domain);
-    
-    // Verified teams that have NOT yet selected a domain
     const unassignedVerifiedTeams = teams.filter(team => !team.Domain && team.verified);
 
-    // --- HANDLERS ---
     const handleResetClick = async () => {
         if (window.confirm("Are you sure you want to reset ALL domain selections? This action cannot be undone.")) {
             setIsLoading(true);
@@ -77,7 +73,6 @@ const DomainMonitor = ({ teams, domains, onResetDomains }) => {
 
     return (
         <div>
-            {/* --- HEADER --- */}
             <div className="flex flex-col md:flex-row justify-between md:items-center mb-6 gap-4">
                 <h2 className="text-4xl font-naruto text-orange-400">Domain Monitor</h2>
                 <button
@@ -88,17 +83,11 @@ const DomainMonitor = ({ teams, domains, onResetDomains }) => {
                     {isLoading ? "Resetting..." : "Reset All Domains"}
                 </button>
             </div>
-
-            {/* --- STATS CARDS --- */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 <StatCard title="Teams Assigned to a Domain" value={teamsWithDomain.length} color="border-green-500" />
                 <StatCard title="Unassigned Domains" value={unassignedVerifiedTeams.length} color="border-yellow-500" />
             </div>
-
-            {/* --- TWO-COLUMN LAYOUT --- */}
             <div className="flex flex-col lg:flex-row gap-8">
-
-                {/* Left Column: Domain Status */}
                 <div className="w-full lg:w-7/12">
                     <div className="bg-gray-800/60 rounded-lg p-6 max-h-[calc(100vh-350px)] overflow-y-auto">
                         <h3 className="text-2xl font-bold mb-4 text-gray-200">Domain Breakdown</h3>
@@ -133,8 +122,6 @@ const DomainMonitor = ({ teams, domains, onResetDomains }) => {
                         </div>
                     </div>
                 </div>
-
-                {/* Right Column: Unassigned Teams */}
                 <div className="w-full lg:w-5/12">
                      <div className="bg-gray-800/60 rounded-lg p-6 max-h-[calc(100vh-350px)] overflow-y-auto">
                         <h3 className="text-2xl font-bold mb-4 text-gray-200">Unassigned Domains</h3>
@@ -159,8 +146,6 @@ const DomainMonitor = ({ teams, domains, onResetDomains }) => {
     );
 };
 
-
-
 function Admin() {
     // --- STATE AND LOGIC ---
     const [isAuthenticated, setIsAuthenticated] = useState(sessionStorage.getItem("adminAuthenticated") === "true");
@@ -168,6 +153,7 @@ function Admin() {
     const [loginError, setLoginError] = useState("");
     const [notification, setNotification] = useState({ message: '', type: '' });
     const [teams, setTeams] = useState([]);
+    const [allTeams, setAllTeams] = useState([]); // For stats and exports
     const [loading, setLoading] = useState(true);
     const [showVerificationModal, setShowVerificationModal] = useState(false);
     const [verificationTab, setVerificationTab] = useState('pending');
@@ -200,6 +186,8 @@ function Admin() {
     const [selectedTeamScoring, setSelectedTeamScoring] = useState("");
     const [internalScoreInput, setInternalScoreInput] = useState("");
     const [isSubmittingScore, setIsSubmittingScore] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
 
     const handleInternalScoreSubmit = async (e) => {
         e.preventDefault();
@@ -214,10 +202,7 @@ function Admin() {
         try {
             await axios.post(`${api}/Hack/team/${selectedTeamScoring}/internal-score`, { score });
             setNotification({ message: 'Score submitted successfully!', type: 'success' });
-            const updatedTeams = teams.map(t => 
-                t._id === selectedTeamScoring ? { ...t, internalGameScore: score } : t
-            );
-            setTeams(updatedTeams);
+            fetchData(currentPage); // Refetch current page
             setSelectedTeamScoring("");
             setInternalScoreInput("");
         } catch (error) {
@@ -232,11 +217,8 @@ function Admin() {
         try {
             await axios.post(`${api}/Hack/admin/reset-domains`);
             setNotification({ message: 'All domains have been reset!', type: 'success' });
-            const [teamsRes, domainsRes] = await Promise.all([
-                axios.get(`${api}/Hack/students`),
-                axios.get(`${api}/domains`),
-            ]);
-            setTeams(teamsRes.data);
+            fetchData(1); // Go back to first page
+            const domainsRes = await axios.get(`${api}/domains`);
             setAllDomains(domainsRes.data);
         } catch (error) {
             setNotification({ message: 'Failed to reset domains.', type: 'error' });
@@ -246,25 +228,110 @@ function Admin() {
     const handleLogin = (e) => { e.preventDefault(); if (passwordInput === "harsha") { setIsAuthenticated(true); sessionStorage.setItem("adminAuthenticated", "true"); setLoginError(""); } else { setLoginError("Incorrect Secret Jutsu. Access Denied."); setPasswordInput(""); } };
     const handleLogout = () => { sessionStorage.removeItem("adminAuthenticated"); setIsAuthenticated(false); setPasswordInput(""); };
     const handleSendPPT = async () => { if (!pptTemplate) { setUploadError("Please select a file."); return; } setIsUploading(true); setUploadError(""); try { const formData = new FormData(); formData.append("file", pptTemplate); formData.append("upload_preset", "ppt_templet"); const response = await axios.post("https://api.cloudinary.com/v1_1/dsvwojzli/raw/upload", formData); socket.emit('admin:sendPPT', { fileUrl: response.data.secure_url, fileName: pptTemplate.name }); setPptTemplate(null); document.getElementById('ppt-input').value = null; setNotification({ message: 'PPT Sent!', type: 'success' }); } catch (error) { setUploadError("Upload failed."); setNotification({ message: 'PPT Upload Failed!', type: 'error' }); } finally { setIsUploading(false); } };
-    const handleExportMembers = () => { const flatData = []; teams.forEach(team => { flatData.push({ "Team Name": team.teamname, "Payment Status": team.verified ? "Yes" : "No", "Member Name": team.name, "Role": "Lead", "Registration Number": team.registrationNumber, "Year": team.year, "Department": team.department, "Email": team.email, "Phone": team.phone, "Transaction ID": team.transtationId, "Payment Image URL": team.imgUrl, }); team.teamMembers.forEach(member => { flatData.push({ "Team Name": team.teamname, "Payment Status": team.verified ? "Yes" : "No", "Member Name": member.name, "Role": "Member", "Registration Number": member.registrationNumber, "Year": member.year, "Department": member.department, "Email": member.email, "Phone": member.phone, }); }); }); const csv = Papa.unparse(flatData); const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" }); const link = document.createElement("a"); const url = URL.createObjectURL(blob); link.setAttribute("href", url); link.setAttribute("download", "members_export.csv"); document.body.appendChild(link); link.click(); document.body.removeChild(link); };
+    
+    const handleExportMembers = async () => {
+        setNotification({ message: 'Preparing full report...', type: 'success' });
+        try {
+            const allTeamsRes = await axios.get(`${api}/Hack/students`);
+            const allTeamsData = allTeamsRes.data.teams;
+            const flatData = [];
+            allTeamsData.forEach(team => {
+                flatData.push({ "Team Name": team.teamname, "Payment Status": team.verified ? "Yes" : "No", "Member Name": team.name, "Role": "Lead", "Registration Number": team.registrationNumber, "Year": team.year, "Department": team.department, "Email": team.email, "Phone": team.phone, "Transaction ID": team.transtationId, "Payment Image URL": team.imgUrl, });
+                team.teamMembers.forEach(member => {
+                    flatData.push({ "Team Name": team.teamname, "Payment Status": team.verified ? "Yes" : "No", "Member Name": member.name, "Role": "Member", "Registration Number": member.registrationNumber, "Year": member.year, "Department": member.department, "Email": member.email, "Phone": member.phone, });
+                });
+            });
+            const csv = Papa.unparse(flatData);
+            const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.setAttribute("download", "full_members_export.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (e) {
+            setNotification({ message: 'Failed to export members.', type: 'error' });
+        }
+    };
+
     const fetchIssues = async () => { setIssuesLoading(true); try { const res = await axios.get(`${api}/Hack/issues`); const pendingIssues = res.data.map(team => ({ ...team, issues: team.issues.filter(issue => issue.status === 'Pending') })).filter(team => team.issues.length > 0); setTeamsWithIssues(pendingIssues); } catch (error) { alert("Could not load support requests."); } finally { setIssuesLoading(false); } };
     const handleOpenSupportModal = () => { setShowSupportModal(true); fetchIssues(); };
     const handleResolveIssue = async (teamId, issueId) => { const originalIssues = [...teamsWithIssues]; setTeamsWithIssues(prevTeams => prevTeams.map(team => team._id === teamId ? { ...team, issues: team.issues.filter(issue => issue._id !== issueId) } : team).filter(team => team.issues.length > 0)); try { await axios.post(`${api}/Hack/issue/resolve/${teamId}/${issueId}`); setNotification({ message: 'Issue Resolved!', type: 'success' }); } catch (error) { setTeamsWithIssues(originalIssues); setNotification({ message: 'Failed to Resolve Issue!', type: 'error' }); } };
     const handleSendReminder = () => { if (!reminderText.trim()) { setReminderError("Cannot be empty."); return; } setIsSendingReminder(true); setReminderError(""); socket.emit('admin:sendReminder', { message: reminderText.trim() }); setNotification({ message: 'Reminder Sent!', type: 'success' }); setTimeout(() => { setIsSendingReminder(false); setReminderText(""); }, 1000); };
-    const handleVerifyTeam = async (teamId) => { setVerifyingTeamId(teamId); try { await axios.post(`${api}/Hack/verify/${teamId}`); setTeams(prev => prev.map(t => t._id === teamId ? { ...t, verified: true } : t)); setNotification({ message: 'Team Verified!', type: 'success' }); } catch (error) { setNotification({ message: 'Verification Failed!', type: 'error' }); } finally { setVerifyingTeamId(null); } };
+    const handleVerifyTeam = async (teamId) => { setVerifyingTeamId(teamId); try { await axios.post(`${api}/Hack/verify/${teamId}`); setTeams(prev => prev.map(t => t._id === teamId ? { ...t, verified: true } : t)); setAllTeams(prev => prev.map(t => t._id === teamId ? { ...t, verified: true } : t)); setNotification({ message: 'Team Verified!', type: 'success' }); } catch (error) { setNotification({ message: 'Verification Failed!', type: 'error' }); } finally { setVerifyingTeamId(null); } };
     const handleDomainChange = async (teamId, newDomain) => { const originalTeams = [...teams]; setTeams(prev => prev.map(t => t._id === teamId ? { ...t, Domain: newDomain } : t)); try { await axios.post(`${api}/Hack/updateDomain`, { teamId, domain: newDomain }); setNotification({ message: 'Domain Updated!', type: 'success' }); } catch (error) { setTeams(originalTeams); setNotification({ message: 'Failed to Update Domain!', type: 'error' }); } };
     const toggleTeamDetails = (teamId) => { setExpandedTeam(expandedTeam === teamId ? null : teamId); };
-    const handleDownloadPass = async () => { if (!selectedTeamForPass) { alert("Please select a team."); return; } const team = teams.find(t => t._id === selectedTeamForPass); if (!team) { alert("Selected team not found."); return; } setIsGeneratingPass(true); const passElement = document.getElementById(`credential-pass-${team._id}`); if (!passElement) { setIsGeneratingPass(false); return; } try { const canvas = await html2canvas(passElement, { scale: 2, }); const imgData = canvas.toDataURL('image/png'); const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [canvas.width, canvas.height] }); pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height); pdf.save(`${team.teamname}_Credentials.pdf`); setNotification({ message: 'Credentials Exported!', type: 'success' }); } catch (error) { setNotification({ message: 'Export Failed!', type: 'error' }); } finally { setIsGeneratingPass(false); } };
-    const handleDownloadAllPasses = async () => { setIsZipping(true); setZipProgress({ current: 0, total: 0 }); const zip = new JSZip(); const verifiedTeams = teams.filter(t => t.verified); if (verifiedTeams.length === 0) { setNotification({ message: 'No verified teams to export!', type: 'error' }); setIsZipping(false); return; } setZipProgress({ current: 0, total: verifiedTeams.length }); try { for (let i = 0; i < verifiedTeams.length; i++) { const team = verifiedTeams[i]; setZipProgress({ current: i + 1, total: verifiedTeams.length }); const passElement = document.getElementById(`credential-pass-${team._id}`); if (!passElement) { continue; } const canvas = await html2canvas(passElement, { scale: 2 }); const imgData = canvas.toDataURL('image/png'); const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [canvas.width, canvas.height] }); pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height); const pdfBlob = pdf.output('blob'); const safeFileName = team.teamname.replace(/[/\\?%*:|"<>]/g, '-') || 'Unnamed Team'; zip.file(`${safeFileName}_Credentials.pdf`, pdfBlob); } const zipBlob = await zip.generateAsync({ type: "blob" }); const link = document.createElement("a"); link.href = URL.createObjectURL(zipBlob); link.download = "All_Team_Credentials.zip"; document.body.appendChild(link); link.click(); document.body.removeChild(link); setNotification({ message: 'All credentials zipped!', type: 'success' }); } catch (error) { setNotification({ message: 'ZIP export failed!', type: 'error' }); } finally { setIsZipping(false); setZipProgress({ current: 0, total: 0 }); } };
-
-    const fetchData = async () => {
+    const handleDownloadPass = async () => { if (!selectedTeamForPass) { alert("Please select a team."); return; } const team = allTeams.find(t => t._id === selectedTeamForPass); if (!team) { alert("Selected team not found."); return; } setIsGeneratingPass(true); const passElement = document.getElementById(`credential-pass-${team._id}`); if (!passElement) { setIsGeneratingPass(false); return; } try { const canvas = await html2canvas(passElement, { scale: 2, }); const imgData = canvas.toDataURL('image/png'); const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [canvas.width, canvas.height] }); pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height); pdf.save(`${team.teamname}_Credentials.pdf`); setNotification({ message: 'Credentials Exported!', type: 'success' }); } catch (error) { setNotification({ message: 'Export Failed!', type: 'error' }); } finally { setIsGeneratingPass(false); } };
+    
+    const handleDownloadAllPasses = async () => {
+        setIsZipping(true);
+        setZipProgress({ current: 0, total: 0 });
         try {
-            const [teamsRes, domainsRes, issuesRes] = await Promise.all([
-                axios.get(`${api}/Hack/students`),
+            const allTeamsRes = await axios.get(`${api}/Hack/students`);
+            const allTeamsData = allTeamsRes.data.teams;
+            const zip = new JSZip();
+            const verifiedTeams = allTeamsData.filter(t => t.verified);
+
+            if (verifiedTeams.length === 0) {
+                setNotification({ message: 'No verified teams to export!', type: 'error' });
+                setIsZipping(false);
+                return;
+            }
+            
+            setZipProgress({ current: 0, total: verifiedTeams.length });
+            
+            // This relies on having all teams rendered, so we use the `allTeams` state.
+            // Temporarily set the state for rendering, then generate PDFs.
+            const currentlyRenderedTeams = teams;
+            setTeams(verifiedTeams); // Render all verified teams for html2canvas
+            
+            await new Promise(resolve => setTimeout(resolve, 500)); // Wait for render
+
+            for (let i = 0; i < verifiedTeams.length; i++) {
+                const team = verifiedTeams[i];
+                setZipProgress({ current: i + 1, total: verifiedTeams.length });
+                const passElement = document.getElementById(`credential-pass-${team._id}`);
+                if (!passElement) continue;
+                const canvas = await html2canvas(passElement, { scale: 2 });
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [canvas.width, canvas.height] });
+                pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+                const pdfBlob = pdf.output('blob');
+                const safeFileName = team.teamname.replace(/[/\\?%*:|"<>]/g, '-') || 'Unnamed Team';
+                zip.file(`${safeFileName}_Credentials.pdf`, pdfBlob);
+            }
+            
+            const zipBlob = await zip.generateAsync({ type: "blob" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(zipBlob);
+            link.download = "All_Team_Credentials.zip";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            setNotification({ message: 'All credentials zipped!', type: 'success' });
+            
+            setTeams(currentlyRenderedTeams); // Revert to paginated view
+
+        } catch (error) {
+            setNotification({ message: 'ZIP export failed!', type: 'error' });
+        } finally {
+            setIsZipping(false);
+            setZipProgress({ current: 0, total: 0 });
+        }
+    };
+
+    const fetchData = async (page = 1) => {
+        try {
+            const [pagedTeamsRes, allTeamsRes, domainsRes, issuesRes] = await Promise.all([
+                axios.get(`${api}/Hack/students?page=${page}&limit=20`),
+                axios.get(`${api}/Hack/students`), // For stats and exports
                 axios.get(`${api}/domains`),
                 axios.get(`${api}/Hack/issues`)
             ]);
-            setTeams(teamsRes.data);
+            setTeams(pagedTeamsRes.data.teams);
+            setTotalPages(pagedTeamsRes.data.totalPages);
+            setCurrentPage(pagedTeamsRes.data.currentPage);
+            setAllTeams(allTeamsRes.data.teams);
             setAllDomains(domainsRes.data);
             const pendingIssuesTeams = issuesRes.data.map(team => ({...team, issues: team.issues.filter(issue => issue.status === 'Pending')})).filter(team => team.issues.length > 0);
             setTeamsWithIssues(pendingIssuesTeams);
@@ -280,10 +347,10 @@ function Admin() {
         }
 
         setLoading(true);
-        fetchData().finally(() => setLoading(false));
+        fetchData(currentPage).finally(() => setLoading(false));
 
         const handleActiveSessionsUpdate = (data) => setActiveSessionsCount(data.count);
-        const handleDomainsUpdate = () => fetchData();
+        const handleDomainsUpdate = () => fetchData(currentPage);
 
         socket.on('admin:activeSessionsUpdate', handleActiveSessionsUpdate);
         socket.on('domains:updated', handleDomainsUpdate);
@@ -293,12 +360,12 @@ function Admin() {
             socket.off('admin:activeSessionsUpdate', handleActiveSessionsUpdate);
             socket.off('domains:updated', handleDomainsUpdate);
         };
-    }, [isAuthenticated]);
+    }, [isAuthenticated, currentPage]);
 
-    const verifiedCount = teams.filter(t => t.verified).length;
-    const notVerifiedCount = teams.length - verifiedCount;
+    const verifiedCount = allTeams.filter(t => t.verified).length;
+    const notVerifiedCount = allTeams.length - verifiedCount;
     const pendingIssuesCount = teamsWithIssues.reduce((count, team) => count + team.issues.length, 0);
-    const verificationFilteredTeams = teams.filter(t => verificationTab === 'pending' ? !t.verified : t.verified).filter(team => team.teamname.toLowerCase().includes(verificationSearchTerm.toLowerCase()) || team.email.toLowerCase().includes(verificationSearchTerm.toLowerCase()));
+    const verificationFilteredTeams = allTeams.filter(t => verificationTab === 'pending' ? !t.verified : t.verified).filter(team => team.teamname.toLowerCase().includes(verificationSearchTerm.toLowerCase()) || team.email.toLowerCase().includes(verificationSearchTerm.toLowerCase()));
 
     if (!isAuthenticated) {
         return ( <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundImage: `url('https://images6.alphacoders.com/605/605598.jpg')`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}> <div className="absolute inset-0 bg-black/80 backdrop-blur-sm"></div> <div className="relative z-10 w-full max-w-md"> <form onSubmit={handleLogin} className="bg-gray-900/50 backdrop-blur-lg border border-orange-500/30 rounded-2xl shadow-2xl p-8 space-y-6"> <div className="text-center"> <h1 className="text-4xl font-naruto text-orange-500 drop-shadow-lg">Hokage's Office</h1> <p className="text-gray-400 mt-2">Admin Seal Verification Required</p> </div> <div> <label className="text-sm font-bold text-orange-400 mb-2 block" htmlFor="password">Secret Jutsu (Password)</label> <input id="password" type="password" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} placeholder="************" className="w-full bg-gray-800 border-2 border-gray-700 text-white rounded-lg px-4 py-3 focus:outline-none focus:border-orange-500 transition-colors"/> </div> {loginError && <p className="text-red-400 text-center text-sm">{loginError}</p>} <button type="submit" className="w-full bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:scale-105 transition-transform text-lg">Verify Seal</button> </form> </div> </div> );
@@ -323,7 +390,7 @@ function Admin() {
                     <div className="space-y-4">
                         <h3 className="font-bold text-gray-400">Live Stats</h3>
                         <div className="text-lg text-cyan-400">Active Logins: <span className="font-bold float-right">{activeSessionsCount}</span></div>
-                        <div className="text-lg">Total Teams: <span className="font-bold float-right">{teams.length}</span></div>
+                        <div className="text-lg">Total Teams: <span className="font-bold float-right">{allTeams.length}</span></div>
                         <div className="text-lg text-green-400">Verified: <span className="font-bold float-right">{verifiedCount}</span></div>
                         <div className="text-lg text-red-400">Pending: <span className="font-bold float-right">{notVerifiedCount}</span></div>
                         <div className="text-lg text-yellow-400">Support Open: <span className="font-bold float-right">{pendingIssuesCount}</span></div>
@@ -337,8 +404,8 @@ function Admin() {
                         {activeView === 'teams' && (
                             <div>
                                 <h2 className="text-4xl font-naruto text-orange-400 mb-6">Team Management</h2>
-                                <input type="text" placeholder="Search for a team..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full p-3 mb-6 bg-gray-800/50 rounded-lg border-2 border-gray-700 focus:outline-none focus:border-orange-500"/>
-                                <div className="space-y-3 max-h-[calc(100vh-250px)] overflow-y-auto pr-2">
+                                <input type="text" placeholder="Search for a team on this page..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full p-3 mb-6 bg-gray-800/50 rounded-lg border-2 border-gray-700 focus:outline-none focus:border-orange-500"/>
+                                <div className="space-y-3 max-h-[calc(100vh-320px)] overflow-y-auto pr-2">
                                     {teams.filter(team => team.teamname.toLowerCase().includes(searchTerm.toLowerCase())).map(team => {
                                         const totalGameScore = (team.memoryGameScore || 0) + (team.numberPuzzleScore || 0) + (team.internalGameScore || 0);
                                         return (
@@ -361,17 +428,36 @@ function Admin() {
                                                 </div>
                                             </div>
                                              {expandedTeam === team._id && (
-                                                 <div className="mt-4 pt-4 border-t border-gray-700 text-sm space-y-1">
-                                                     <p><strong className="text-orange-400 w-24 inline-block">Lead:</strong> {team.name} ({team.registrationNumber})</p>
-                                                     <p><strong className="text-orange-400 w-24 inline-block">Members:</strong> {team.teamMembers.map(m => m.name).join(', ')}</p>
-                                                     <p><strong className="text-orange-400 w-24 inline-block">Memory Game:</strong> {team.memoryGameScore ?? 'Not Played'}</p>
-                                                     <p><strong className="text-orange-400 w-24 inline-block">Number Puzzle:</strong> {team.numberPuzzleScore ?? 'Not Played'}</p>
-                                                     <p><strong className="text-orange-400 w-24 inline-block">Internal Game:</strong> {team.internalGameScore ?? 'N/A'}</p>
-                                                 </div>
+                                                <div className="mt-4 pt-4 border-t border-gray-700 text-sm space-y-1">
+                                                    <p><strong className="text-orange-400 w-24 inline-block">Lead:</strong> {team.name} ({team.registrationNumber})</p>
+                                                    <p><strong className="text-orange-400 w-24 inline-block">Members:</strong> {team.teamMembers.map(m => m.name).join(', ')}</p>
+                                                    <p><strong className="text-orange-400 w-24 inline-block">Memory Game:</strong> {team.memoryGameScore ?? 'Not Played'}</p>
+                                                    <p><strong className="text-orange-400 w-24 inline-block">Number Puzzle:</strong> {team.numberPuzzleScore ?? 'Not Played'}</p>
+                                                    <p><strong className="text-orange-400 w-24 inline-block">Internal Game:</strong> {team.internalGameScore ?? 'N/A'}</p>
+                                                </div>
                                              )}
-                                         </div>
+                                          </div>
                                         )
                                     })}
+                                </div>
+                                <div className="flex justify-center items-center mt-6 gap-4">
+                                    <button
+                                        onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
+                                        disabled={currentPage === 1}
+                                        className="flex items-center gap-2 px-4 py-2 bg-gray-800 rounded-lg disabled:opacity-50 hover:bg-gray-700 transition-colors"
+                                    >
+                                        <ArrowLeft size={16} /> Previous
+                                    </button>
+                                    <span className="font-semibold text-gray-300">
+                                        Page {currentPage} of {totalPages}
+                                    </span>
+                                    <button
+                                        onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
+                                        disabled={currentPage === totalPages}
+                                        className="flex items-center gap-2 px-4 py-2 bg-gray-800 rounded-lg disabled:opacity-50 hover:bg-gray-700 transition-colors"
+                                    >
+                                        Next <ArrowRight size={16} />
+                                    </button>
                                 </div>
                             </div>
                         )}
@@ -380,8 +466,8 @@ function Admin() {
                                  <h2 className="text-4xl font-naruto text-orange-400 mb-6">Manual Score Entry</h2>
                                  <div className="bg-gray-800/60 p-6 rounded-lg border border-cyan-500/30 max-w-lg mx-auto">
                                      <h3 className="text-2xl font-naruto text-cyan-400 mb-4 flex items-center gap-3">
-                                         <Gem />
-                                         Add Internal Game Score
+                                        <Gem />
+                                        Add Internal Game Score
                                      </h3>
                                      <form onSubmit={handleInternalScoreSubmit} className="space-y-4">
                                          <div>
@@ -392,7 +478,7 @@ function Admin() {
                                                  className="w-full p-3 bg-gray-700 text-white rounded-md border border-gray-600 focus:outline-none focus:border-cyan-500"
                                              >
                                                  <option value="">-- Choose a team --</option>
-                                                 {teams.map(team => (
+                                                 {allTeams.map(team => (
                                                      <option key={team._id} value={team._id}>
                                                          {team.teamname} (Current: {team.internalGameScore || 0})
                                                      </option>
@@ -418,11 +504,11 @@ function Admin() {
                                          </button>
                                      </form>
                                  </div>
-                             </div>
+                              </div>
                         )}
                         {activeView === 'domains' && (
                             <DomainMonitor
-                                teams={teams}
+                                teams={allTeams}
                                 domains={allDomains}
                                 onResetDomains={handleResetAllDomains}
                             />
@@ -475,10 +561,10 @@ function Admin() {
             {showVerificationModal && ( <div className="fixed inset-0 bg-black/80 flex justify-center items-center z-50 p-4"> <div className="bg-gray-900 border-2 border-orange-500/50 rounded-xl shadow-lg p-6 w-full max-w-4xl flex flex-col"> <div className="flex justify-between items-center mb-4"> <h2 className="text-2xl text-orange-400 font-naruto">Payment Verification</h2> <button className="text-gray-400 hover:text-white text-3xl" onClick={() => setShowVerificationModal(false)}>&times;</button> </div> <div className="flex border-b border-gray-700 mb-4"> <button onClick={() => setVerificationTab('pending')} className={`py-2 px-4 font-semibold ${verificationTab === 'pending' ? 'text-orange-400 border-b-2 border-orange-400' : 'text-gray-400'}`}>Pending ({notVerifiedCount})</button> <button onClick={() => setVerificationTab('verified')} className={`py-2 px-4 font-semibold ${verificationTab === 'verified' ? 'text-green-400 border-b-2 border-green-400' : 'text-gray-400'}`}>Verified ({verifiedCount})</button> </div> <div className="mb-4"> <input type="text" placeholder="Search by Team Name or Email..." value={verificationSearchTerm} onChange={(e) => setVerificationSearchTerm(e.target.value)} className="w-full p-3 bg-gray-800 text-white rounded-lg border-2 border-gray-700 focus:outline-none focus:border-orange-500 transition-colors" /> </div> <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2"> {verificationFilteredTeams.length > 0 ? ( verificationFilteredTeams.map((team) => ( <div key={team._id} className="bg-gray-800 rounded-lg p-4 shadow"> <div className="flex justify-between items-center"> <div> <p className="text-white font-semibold">{team.teamname}</p> <p className="text-gray-400 text-sm">{team.email}</p> </div> <div className="flex items-center gap-4"> <button onClick={() => toggleTeamDetails(team._id)} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded font-semibold">{expandedTeam === team._id ? 'Collapse' : 'Expand'}</button> {verificationTab === 'pending' && ( <button onClick={() => handleVerifyTeam(team._id)} disabled={verifyingTeamId === team._id} className="w-24 text-center px-5 py-2 bg-green-600 hover:bg-green-700 text-white rounded font-semibold shadow disabled:opacity-50 disabled:cursor-wait"> {verifyingTeamId === team._id ? ( <div className="flex justify-center items-center"><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /></div> ) : ( 'Verify' )} </button> )} </div> </div> {expandedTeam === team._id && ( <div className="mt-4 pt-4 border-t border-gray-700 grid grid-cols-1 md:grid-cols-2 gap-6"> <div> <h4 className="font-bold text-orange-400 mb-2">Team Members:</h4> <ul className="list-disc list-inside text-gray-300 space-y-1"> <li>{team.name} (Leader)</li> {team.teamMembers.map((member, index) => (<li key={index}>{member.name}</li>))} </ul> <h4 className="font-bold text-orange-400 mt-4 mb-2">Payment Details:</h4> <p className="text-gray-300"><span className="font-semibold">UPI ID:</span> {team.upiId}</p> <p className="text-gray-300"><span className="font-semibold">Transaction ID:</span> {team.transtationId}</p> </div> <div> <h4 className="font-bold text-orange-400 mb-2">Payment Proof:</h4> <a href={team.imgUrl} target="_blank" rel="noopener noreferrer"><img src={team.imgUrl} alt="Payment Proof" className="rounded-lg w-full h-auto max-h-60 object-contain cursor-pointer"/></a> </div> </div> )} </div> )) ) : ( <div className="text-center py-10"> <p className="text-gray-400">No teams found matching your search.</p> </div> )} </div> </div> </div> )}
             {showSupportModal && ( <div className="fixed inset-0 bg-black/80 flex justify-center items-center z-50 p-4"> <div className="bg-gray-900 border-2 border-orange-500/50 rounded-xl shadow-lg p-6 w-full max-w-3xl flex flex-col"> <div className="flex justify-between items-center mb-4"> <h2 className="text-2xl text-orange-400 font-naruto">Support Requests</h2> <button className="text-gray-400 hover:text-white text-3xl" onClick={() => setShowSupportModal(false)}>&times;</button> </div> <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2"> {issuesLoading ? (<div className="text-center text-gray-400 py-8">Loading requests...</div>) : teamsWithIssues.length > 0 ? (teamsWithIssues.map(team => (team.issues.map(issue => ( <div key={issue._id} className="bg-gray-800 rounded-lg p-4 shadow-md"> <div className="flex justify-between items-start gap-4"> <div> <p className="text-sm text-gray-400 mb-1">Sector: {team.Sector}</p> <p className="font-bold text-lg text-white">Team Name: {team.teamname}</p> <p className="text-gray-400 text-sm mt-2 whitespace-pre-wrap">Issue: {issue.text}</p> </div> <button onClick={() => handleResolveIssue(team._id, issue._id)} className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-md whitespace-nowrap">Resolve</button> </div> <p className="text-xs text-gray-500 text-right mt-2">{new Date(issue.timestamp).toLocaleString()}</p> </div> ))))) : (<div className="text-center text-gray-400 py-12"><p className="text-3xl">🎉</p><p className="mt-2 font-semibold text-lg">All requests have been resolved!</p></div>)} </div> </div> </div> )}
             {showAttdModal && ( <div className="fixed inset-0 bg-black/80 flex justify-center items-center z-50 p-4"> <div className="bg-gray-900 border-2 border-orange-500/50 rounded-xl shadow-lg p-6 w-full max-w-sm flex flex-col"> <h2 className="text-xl font-bold text-orange-400 mb-4">Select Attendance Round</h2> <div className="flex flex-col gap-3"> {["First", "Second", "Third", "Fourth","Fifth", "Sixth", "Seventh"].map((round, idx) => ( <button key={round} className={`px-4 py-2 rounded-lg font-semibold transition ${selectedAttdRound === idx + 1 ? "bg-orange-700 text-white" : "bg-gray-700 text-gray-300 hover:bg-orange-600 hover:text-white"}`} onClick={() => { setSelectedAttdRound(idx + 1); setShowAttdModal(false); navigate(`/attdence?round=${idx + 1}`); }} >{round} Attendance</button> ))} </div> <button className="mt-6 px-4 py-2 bg-gray-600 text-white rounded-lg" onClick={() => setShowAttdModal(false)}>Cancel</button> </div> </div> )}
-            {showCredentialModal && ( <div className="fixed inset-0 bg-black/80 flex justify-center items-center z-50 p-4"> <div className="bg-gray-900 border-2 border-cyan-500/50 rounded-xl shadow-lg p-6 w-full max-w-lg flex flex-col"> <div className="flex justify-between items-center mb-6"> <h2 className="text-2xl text-cyan-400 font-naruto">Export Team Credentials</h2> <button className="text-gray-400 hover:text-white text-3xl" onClick={() => setShowCredentialModal(false)}>&times;</button> </div> <div className="space-y-4 border-b border-gray-700 pb-6 mb-6"> <p className="text-gray-300 text-center font-semibold">Download a Single Team Pass</p> <div className="flex flex-col sm:flex-row gap-4"> <select value={selectedTeamForPass} onChange={(e) => setSelectedTeamForPass(e.target.value)} className="flex-grow p-3 bg-gray-800 text-white rounded-md border border-gray-700 focus:outline-none focus:border-cyan-500"> <option value="">-- Select a Verified Team --</option> {teams.filter(t => t.verified).map(team => ( <option key={team._id} value={team._id}>{team.teamname}</option> ))} </select> <button onClick={handleDownloadPass} disabled={!selectedTeamForPass || isGeneratingPass} className="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"> {isGeneratingPass ? (<><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />Generating...</>) : 'Download Pass (PDF)'} </button> </div> </div> <div className="space-y-4 text-center"> <p className="text-gray-300 font-semibold">Download All Verified Team Passes</p> <p className="text-sm text-gray-500">This will generate a PDF for every verified team and download them in a single .zip file.</p> <button onClick={handleDownloadAllPasses} disabled={isZipping} className="w-full bg-gradient-to-r from-purple-600 to-indigo-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"> {isZipping ? ( <> <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> Zipping... ({zipProgress.current} / {zipProgress.total}) </> ) : ( 'Download All as ZIP' )} </button> </div> </div> </div> )}
+            {showCredentialModal && ( <div className="fixed inset-0 bg-black/80 flex justify-center items-center z-50 p-4"> <div className="bg-gray-900 border-2 border-cyan-500/50 rounded-xl shadow-lg p-6 w-full max-w-lg flex flex-col"> <div className="flex justify-between items-center mb-6"> <h2 className="text-2xl text-cyan-400 font-naruto">Export Team Credentials</h2> <button className="text-gray-400 hover:text-white text-3xl" onClick={() => setShowCredentialModal(false)}>&times;</button> </div> <div className="space-y-4 border-b border-gray-700 pb-6 mb-6"> <p className="text-gray-300 text-center font-semibold">Download a Single Team Pass</p> <div className="flex flex-col sm:flex-row gap-4"> <select value={selectedTeamForPass} onChange={(e) => setSelectedTeamForPass(e.target.value)} className="flex-grow p-3 bg-gray-800 text-white rounded-md border border-gray-700 focus:outline-none focus:border-cyan-500"> <option value="">-- Select a Verified Team --</option> {allTeams.filter(t => t.verified).map(team => ( <option key={team._id} value={team._id}>{team.teamname}</option> ))} </select> <button onClick={handleDownloadPass} disabled={!selectedTeamForPass || isGeneratingPass} className="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"> {isGeneratingPass ? (<><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />Generating...</>) : 'Download Pass (PDF)'} </button> </div> </div> <div className="space-y-4 text-center"> <p className="text-gray-300 font-semibold">Download All Verified Team Passes</p> <p className="text-sm text-gray-500">This will generate a PDF for every verified team and download them in a single .zip file.</p> <button onClick={handleDownloadAllPasses} disabled={isZipping} className="w-full bg-gradient-to-r from-purple-600 to-indigo-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"> {isZipping ? ( <> <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> Zipping... ({zipProgress.current} / {zipProgress.total}) </> ) : ( 'Download All as ZIP' )} </button> </div> </div> </div> )}
 
             <div ref={passContainerRef} style={{ position: 'absolute', left: '-9999px', top: 0, zIndex: -10 }}>
-                {teams.filter(t => t.verified).map(team => (
+                {allTeams.filter(t => t.verified).map(team => (
                     <div
                         key={`pass-${team._id}`}
                         id={`credential-pass-${team._id}`}

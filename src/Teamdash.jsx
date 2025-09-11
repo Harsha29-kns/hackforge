@@ -556,7 +556,7 @@ function Teamdash() {
             socket.off("puzzleStatusUpdate", handlePuzzleStatusUpdate);
             socket.off("stopTheBarStatusUpdate", handleStopTheBarStatusUpdate);
         };
-    }, [team]);
+    }, [team]); // Only re-run this effect if 'team' changes
     const handleBarGameEnd = async (score) => {
         if (!team || team.stopTheBarPlayed) return;
         setIsSubmittingBarScore(true);

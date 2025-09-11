@@ -69,8 +69,11 @@ function Review() {
             setJudge(storedPassword);
         }
         async function fetchData() {
+            if (!judge) return; 
+
             try {
-                let res = await axios.get(`${api}/Hack/students`);
+                // CORRECT: Using the new, specific endpoint
+                const res = await axios.get(`${api}/Hack/judge/${judge}/teams`);
                 const sortedTeams = res.data.sort((a, b) => a.teamname.localeCompare(b.teamname));
                 setTeams(sortedTeams);
             } catch (error) {
@@ -84,30 +87,22 @@ function Review() {
         } else {
             setLoading(false);
         }
-    }, [isAuthenticated]);
+    }, [isAuthenticated, judge]);
 
     const filteredTeams = useMemo(() => {
-        if (!judge) return [];
-
-        let teamsForJudge = [];
-        const narutoTeams = teams.filter(t => t.Sector === "Naruto");
-        const sasukeTeams = teams.filter(t => t.Sector === "Sasuke");
-        const itachiTeams = teams.filter(t => t.Sector === "Itachi");
-
-        if (judge === "judge1") {
-            teamsForJudge = [...narutoTeams, ...sasukeTeams.slice(0, 10)];
-        } else if (judge === "judge2") {
-            teamsForJudge = [...itachiTeams, ...sasukeTeams.slice(10)];
-        }
-
-        const numberedTeams = teamsForJudge.map((team, index) => ({...team, teamNumber: index + 1}));
+        // CORRECTED: The server has already done the filtering. 
+        // We just need to add the team number and apply the search query.
+        if (!teams) return [];
+        
+        const numberedTeams = teams.map((team, index) => ({...team, teamNumber: index + 1}));
 
         if (!searchQuery) return numberedTeams;
+        
         return numberedTeams.filter(team =>
             team.teamname.toLowerCase().includes(searchQuery.toLowerCase()) ||
             String(team.teamNumber) === searchQuery
         );
-    }, [teams, judge, searchQuery]);
+    }, [teams, searchQuery]);
 
     const maxMarks = useMemo(() => {
         return Object.values(scores).reduce((total, item) => total + item.max, 0);
@@ -170,7 +165,7 @@ function Review() {
         };
         
         try {
-            const endpoint = reviewRound === 1 ? 'score1' : 'score'; //score is for 2nd review and score1 is for 1st review
+            const endpoint = reviewRound === 1 ? 'score1' : 'score';
             await axios.post(`${api}/Hack/team/${endpoint}/${currentTeam._id}`, payload);
             
             const updatedTeams = [...teams];
