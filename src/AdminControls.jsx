@@ -19,6 +19,8 @@ function AdminControls() {
   const [currentCount, setCurrentCount] = useState(0);
   const [currentLimit, setCurrentLimit] = useState(0);
   const [isRegClosed, setIsRegClosed] = useState(false);
+  const [isFirstReviewOpen, setIsFirstReviewOpen] = useState(false);
+  const [isSecondReviewOpen, setIsSecondReviewOpen] = useState(false);
 
   // --- Registration Handlers ---
   const handleSetRegLimit = () => {
@@ -124,6 +126,20 @@ function AdminControls() {
     };
   }, []);
 
+  useEffect(() => {
+    socket.on('reviewStatusUpdate', (status) => {
+        setIsFirstReviewOpen(status.isFirstReviewOpen);
+        setIsSecondReviewOpen(status.isSecondReviewOpen);
+    });
+    
+    // Fetch initial status when the component mounts
+    socket.emit('judge:getReviewStatus');
+
+    return () => {
+        socket.off('reviewStatusUpdate');
+    };
+}, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-black text-white p-8 flex flex-col items-center">
       <div className="w-full max-w-4xl">
@@ -184,6 +200,37 @@ function AdminControls() {
               <button onClick={handleCloseDomains} className="flex-1 bg-red-600 hover:bg-red-700 px-6 py-2 rounded-lg font-semibold transition shadow-md flex items-center justify-center gap-2"><Lock size={18}/> Close Now</button>
             </div>
           </div>
+        </section>
+
+        <section className="bg-gray-900/70 backdrop-blur-md p-6 rounded-2xl shadow-lg mb-8 border border-gray-700">
+              <div className="flex items-center gap-3 mb-4">
+                  <h2 className="text-2xl font-semibold">Review Controls</h2>
+              </div>
+              <div className="space-y-4">
+                  {/* First Review Controls */}
+                  <div className="flex items-center justify-between">
+                      <p className="text-lg">First Review Status:</p>
+                      <span className={`px-3 py-1 rounded-full text-sm font-semibold ${isFirstReviewOpen ? 'bg-green-500/30 text-green-300' : 'bg-red-500/30 text-red-300'}`}>
+                          {isFirstReviewOpen ? 'OPEN' : 'CLOSED'}
+                      </span>
+                  </div>
+                  <div className="flex gap-4">
+                      <button onClick={() => socket.emit("admin:setFirstReviewState", true)} className="flex-1 bg-green-600 hover:bg-green-700 px-6 py-2 rounded-lg font-semibold transition">Open First Review</button>
+                      <button onClick={() => socket.emit("admin:setFirstReviewState", false)} className="flex-1 bg-red-600 hover:bg-red-700 px-6 py-2 rounded-lg font-semibold transition">Close First Review</button>
+                  </div>
+                  
+                  {/* Second Review Controls */}
+                  <div className="flex items-center justify-between pt-4">
+                      <p className="text-lg">Second Review Status:</p>
+                      <span className={`px-3 py-1 rounded-full text-sm font-semibold ${isSecondReviewOpen ? 'bg-green-500/30 text-green-300' : 'bg-red-500/30 text-red-300'}`}>
+                          {isSecondReviewOpen ? 'OPEN' : 'CLOSED'}
+                      </span>
+                  </div>
+                  <div className="flex gap-4">
+                      <button onClick={() => socket.emit("admin:setSecondReviewState", true)} className="flex-1 bg-green-600 hover:bg-green-700 px-6 py-2 rounded-lg font-semibold transition">Open Second Review</button>
+                      <button onClick={() => socket.emit("admin:setSecondReviewState", false)} className="flex-1 bg-red-600 hover:bg-red-700 px-6 py-2 rounded-lg font-semibold transition">Close Second Review</button>
+                  </div>
+              </div>
         </section>
 
         {/* --- ADDED: Game Controls Section --- */}

@@ -1,6 +1,7 @@
 import axios from "axios";
 import { useEffect, useState, useMemo } from "react";
 import api from "./api.js";
+import { io } from "socket.io-client";
 
 // --- NEW RUBRICS ---
 const firstReviewRubric = {
@@ -21,6 +22,7 @@ const IconLogout = () => ( <svg xmlns="http://www.w3.org/2000/svg" width="20" he
 const IconSearch = () => ( <svg className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> );
 const IconCheckCircle = () => ( <svg className="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> );
 
+const socket = io(api);
 
 function Review() {
     // --- STATE MANAGEMENT ---
@@ -37,6 +39,23 @@ function Review() {
     const [reviewRound, setReviewRound] = useState(1);
     const [scores, setScores] = useState(firstReviewRubric);
     const [showPassword, setShowPassword] = useState(false);
+    const [isFirstReviewOpen, setIsFirstReviewOpen] = useState(false);
+    const [isSecondReviewOpen, setIsSecondReviewOpen] = useState(false);
+    
+    const isReviewOpen = reviewRound === 1 ? isFirstReviewOpen : isSecondReviewOpen;
+
+    useEffect(() => {
+        socket.on('reviewStatusUpdate', (status) => {
+            setIsFirstReviewOpen(status.isFirstReviewOpen);
+            setIsSecondReviewOpen(status.isSecondReviewOpen);
+        });
+
+        socket.emit('judge:getReviewStatus'); // Get initial status
+
+        return () => {
+            socket.off('reviewStatusUpdate');
+        };
+    }, []);
 
     useEffect(() => {
         const currentRubric = reviewRound === 1 ? firstReviewRubric : secondReviewRubric;
@@ -62,6 +81,8 @@ function Review() {
         }
         if (isAuthenticated) {
             fetchData();
+        } else {
+            setLoading(false);
         }
     }, [isAuthenticated]);
 
@@ -149,7 +170,7 @@ function Review() {
         };
         
         try {
-            const endpoint = reviewRound === 1 ? 'score1' : 'score';
+            const endpoint = reviewRound === 1 ? 'score1' : 'score'; //score is for 2nd review and score1 is for 1st review
             await axios.post(`${api}/Hack/team/${endpoint}/${currentTeam._id}`, payload);
             
             const updatedTeams = [...teams];
@@ -167,7 +188,8 @@ function Review() {
             setSubmitStatus({ type: 'success', message: 'Scores submitted successfully!' });
         } catch (error) {
             console.error("Submission Error:", error);
-            setSubmitStatus({ type: 'error', message: 'Failed to submit scores. Please try again.' });
+            const errorMessage = error.response?.data?.message || 'Failed to submit scores. Please try again.';
+            setSubmitStatus({ type: 'error', message: errorMessage });
         } finally {
             setSubmitting(false);
         }
@@ -301,17 +323,24 @@ function Review() {
                             </div>
                             <p className="text-gray-400 mb-6">Evaluating for <strong className="text-gray-200">{reviewRound === 1 ? 'First' : 'Second'} Review</strong></p>
 
-                            <div className="space-y-3">
-                                {Object.keys(scores).map((key) => (
-                                    <div key={key} className="grid grid-cols-1 md:grid-cols-3 items-center gap-4 p-3 bg-white/5 rounded-lg">
-                                        <span className="font-medium col-span-2">{scores[key].criteria}</span>
-                                        <div className="flex justify-start md:justify-end items-center gap-3">
-                                            <input type="number" value={scores[key].marks} onChange={(e) => handleScoreChange(key, e.target.value)} className="w-24 px-2 py-1.5 rounded-md bg-black/50 text-white border-2 border-gray-600 text-center focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors" max={scores[key].max} min="0" />
-                                            <p className="w-8 text-gray-400">/ {scores[key].max}</p>
+                            {isReviewOpen ? (
+                                <div className="space-y-3">
+                                    {Object.keys(scores).map((key) => (
+                                        <div key={key} className="grid grid-cols-1 md:grid-cols-3 items-center gap-4 p-3 bg-white/5 rounded-lg">
+                                            <span className="font-medium col-span-2">{scores[key].criteria}</span>
+                                            <div className="flex justify-start md:justify-end items-center gap-3">
+                                                <input type="number" value={scores[key].marks} onChange={(e) => handleScoreChange(key, e.target.value)} className="w-24 px-2 py-1.5 rounded-md bg-black/50 text-white border-2 border-gray-600 text-center focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors" max={scores[key].max} min="0" />
+                                                <p className="w-8 text-gray-400">/ {scores[key].max}</p>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
-                            </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="h-full flex flex-col items-center justify-center text-center p-8 bg-gray-900/50 rounded-lg">
+                                    <h2 className="text-2xl font-bold text-red-400">Review Round Closed</h2>
+                                    <p className="text-gray-400 mt-2">Please wait for the admin to open this review round to submit scores.</p>
+                                </div>
+                            )}
                         </div>
                     ) : (
                         <div className="flex-grow flex flex-col items-center justify-center text-center p-8">
@@ -333,7 +362,7 @@ function Review() {
                             {isAlreadyMarked ? (
                                 <div className="px-4 py-3 rounded-lg bg-green-500/20 text-green-300 font-semibold text-center">✅ This team has already been marked.</div>
                             ) : (
-                                <button onClick={handleSubmitScores} disabled={submitting} className="w-full md:w-auto px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-all transform hover:scale-105">
+                                <button onClick={handleSubmitScores} disabled={submitting || !isReviewOpen} className="w-full md:w-auto px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-all transform hover:scale-105">
                                     {submitting ? "Submitting..." : "Submit Scores"}
                                 </button>
                             )}
@@ -346,4 +375,3 @@ function Review() {
 }
 
 export default Review;
-
