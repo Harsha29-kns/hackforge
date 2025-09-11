@@ -2,26 +2,17 @@ import axios from "axios";
 import { useEffect, useState, useMemo } from "react";
 import api from "./api.js";
 
-// --- Rubric Data (No Changes) ---
+// --- NEW RUBRICS ---
 const firstReviewRubric = {
-    codeQuality: { criteria: "Code Quality & Standards", marks: "", max: 10 },
-    ideaOriginality: { criteria: "Idea Originality", marks: "", max: 5 },
-    prototypeCompletion: { criteria: "Prototype Completion", marks: "", max: 5 },
-    teamworkCollaboration: { criteria: "Teamwork & Collaboration", marks: "", max: 5 },
+    conceptInnovation: { criteria: "Concept & Innovation", marks: "", max: 20 },
+    technicalFeasibility: { criteria: "Technical Feasibility", marks: "", max: 15 },
+    initialPrototype: { criteria: "Initial Prototype/Wireframe", marks: "", max: 15 },
 };
 
 const secondReviewRubric = {
-    backendArchitecture: { criteria: "Backend Architecture & API Design", marks: "", max: 10 },
-    frontendInterface: { criteria: "Frontend Interface & Responsiveness", marks: "", max: 10 },
-    integrationDeployment: { criteria: "Integration & Deployment", marks: "", max: 10 },
-    documentationClarity: { criteria: "Documentation & Clarity", marks: "", max: 5 },
-};
-
-const thirdReviewRubric = {
-    problemImpact: { criteria: "Problem Relevance & Impact", marks: "", max: 10 },
-    innovationFactor: { criteria: "Innovation Factor", marks: "", max: 10 },
-    scalabilityViability: { criteria: "Scalability & Viability", marks: "", max: 10 },
-    demoExecution: { criteria: "Demo Execution & Delivery", marks: "", max: 10 },
+    executionProgress: { criteria: "Execution & Progress", marks: "", max: 20 },
+    technicalComplexity: { criteria: "Technical Complexity", marks: "", max: 15 },
+    presentationDemo: { criteria: "Presentation & Demo", marks: "", max: 15 },
 };
 
 
@@ -32,31 +23,31 @@ const IconCheckCircle = () => ( <svg className="h-5 w-5 text-green-400" xmlns="h
 
 
 function Review() {
-    // --- STATE MANAGEMENT (No Changes to Logic) ---
+    // --- STATE MANAGEMENT ---
     const [teams, setTeams] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [currentSector, setCurrentSector] = useState(0);
-    const [currentTeamIndex, setCurrentTeamIndex] = useState(null); // Use null to signify no team is selected
+    const [currentTeamIndex, setCurrentTeamIndex] = useState(null);
     const [submitting, setSubmitting] = useState(false);
     const [submitStatus, setSubmitStatus] = useState(null);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [password, setPassword] = useState(sessionStorage.getItem("password") || "");
+    const [password, setPassword] = useState("");
+    const [judge, setJudge] = useState(null);
     const [error, setError] = useState("");
     const [searchQuery, setSearchQuery] = useState("");
     const [reviewRound, setReviewRound] = useState(1);
     const [scores, setScores] = useState(firstReviewRubric);
     const [showPassword, setShowPassword] = useState(false);
 
-    const sectors = ["Naruto", "Sasuke", "Itachi"];
-
     useEffect(() => {
-        const currentRubric = reviewRound === 1 ? firstReviewRubric : reviewRound === 2 ? secondReviewRubric : thirdReviewRubric;
+        const currentRubric = reviewRound === 1 ? firstReviewRubric : secondReviewRubric;
         setScores(currentRubric);
     }, [reviewRound]);
     
     useEffect(() => {
-        if (sessionStorage.getItem("password") === "marks2025") {
+        const storedPassword = sessionStorage.getItem("judgePassword");
+        if (storedPassword === "judge1" || storedPassword === "judge2") {
             setIsAuthenticated(true);
+            setJudge(storedPassword);
         }
         async function fetchData() {
             try {
@@ -75,32 +66,55 @@ function Review() {
     }, [isAuthenticated]);
 
     const filteredTeams = useMemo(() => {
-        const teamsInSector = teams.filter(t => t.Sector === sectors[currentSector]);
-        if (!searchQuery) return teamsInSector;
-        return teamsInSector.filter(team =>
-            team.teamname.toLowerCase().includes(searchQuery.toLowerCase())
+        if (!judge) return [];
+
+        let teamsForJudge = [];
+        const narutoTeams = teams.filter(t => t.Sector === "Naruto");
+        const sasukeTeams = teams.filter(t => t.Sector === "Sasuke");
+        const itachiTeams = teams.filter(t => t.Sector === "Itachi");
+
+        if (judge === "judge1") {
+            teamsForJudge = [...narutoTeams, ...sasukeTeams.slice(0, 10)];
+        } else if (judge === "judge2") {
+            teamsForJudge = [...itachiTeams, ...sasukeTeams.slice(10)];
+        }
+
+        const numberedTeams = teamsForJudge.map((team, index) => ({...team, teamNumber: index + 1}));
+
+        if (!searchQuery) return numberedTeams;
+        return numberedTeams.filter(team =>
+            team.teamname.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            String(team.teamNumber) === searchQuery
         );
-    }, [teams, currentSector, searchQuery, sectors]);
+    }, [teams, judge, searchQuery]);
 
     const maxMarks = useMemo(() => {
         return Object.values(scores).reduce((total, item) => total + item.max, 0);
     }, [scores]);
 
-    // --- HANDLER FUNCTIONS (No Changes to Logic) ---
+    // --- HANDLER FUNCTIONS ---
     const resetScoreMarks = () => {
-        const currentRubric = reviewRound === 1 ? firstReviewRubric : reviewRound === 2 ? secondReviewRubric : thirdReviewRubric;
+        const currentRubric = reviewRound === 1 ? firstReviewRubric : secondReviewRubric;
         setScores(currentRubric);
     };
 
     const handleLogin = (e) => {
         e.preventDefault();
-        if (password === "marks2025") {
+        if (password === "judge1" || password === "judge2") {
             setIsAuthenticated(true);
-            sessionStorage.setItem("password", password);
+            setJudge(password);
+            sessionStorage.setItem("judgePassword", password);
             setError("");
         } else {
             setError("Access Denied. Invalid Credentials.");
         }
+    };
+    
+    const handleLogout = () => {
+        setIsAuthenticated(false);
+        setJudge(null);
+        setPassword("");
+        sessionStorage.removeItem("judgePassword");
     };
 
     const handleScoreChange = (key, value) => {
@@ -111,13 +125,6 @@ function Review() {
 
     const calculateTotalMarks = () => {
         return Object.values(scores).reduce((total, item) => total + (Number(item.marks) || 0), 0);
-    };
-    
-    const handleSectorChange = (newSector) => {
-        resetScoreMarks();
-        setSearchQuery("");
-        setCurrentSector(newSector);
-        setCurrentTeamIndex(null); // Deselect team when changing sector
     };
     
     const handleTeamSelect = (index) => {
@@ -138,12 +145,11 @@ function Review() {
         const payload = {
             score: calculateTotalMarks(),
             ...(reviewRound === 1 && { FirstReview: scores }),
-            ...(reviewRound === 2 && { SecoundReview: scores }),
-            ...(reviewRound === 3 && { ThirdReview: scores })
+            ...(reviewRound === 2 && { SecoundReview: scores })
         };
         
         try {
-            const endpoint = reviewRound === 1 ? 'score1' : reviewRound === 2 ? 'score' : 'score3';
+            const endpoint = reviewRound === 1 ? 'score1' : 'score';
             await axios.post(`${api}/Hack/team/${endpoint}/${currentTeam._id}`, payload);
             
             const updatedTeams = [...teams];
@@ -155,9 +161,6 @@ function Review() {
                 } else if (reviewRound === 2) {
                     updatedTeams[teamIndexInAllTeams].SecoundReviewScore = calculateTotalMarks();
                     updatedTeams[teamIndexInAllTeams].SecoundReview = true;
-                } else if (reviewRound === 3) {
-                    updatedTeams[teamIndexInAllTeams].ThirdReviewScore = calculateTotalMarks();
-                    updatedTeams[teamIndexInAllTeams].ThirdReview = true;
                 }
                 setTeams(updatedTeams);
             }
@@ -170,8 +173,6 @@ function Review() {
         }
     };
 
-
-    // --- NEW: Redesigned Login Page ---
     if (!isAuthenticated) {
         return (
             <div className="min-h-screen bg-[#0a091e] text-white flex flex-col items-center justify-center p-4 overflow-hidden">
@@ -222,32 +223,22 @@ function Review() {
     if (loading) return <div className="h-screen flex items-center justify-center bg-[#0a091e] text-white text-2xl animate-pulse">Loading Terminal Data...</div>;
 
     const currentTeam = currentTeamIndex !== null ? filteredTeams[currentTeamIndex] : null;
-    const isAlreadyMarked = currentTeam ? (reviewRound === 1 ? currentTeam.FirstReview : reviewRound === 2 ? currentTeam.SecoundReview : currentTeam.ThirdReview) : false;
+    const isAlreadyMarked = currentTeam ? (reviewRound === 1 ? currentTeam.FirstReview : currentTeam.SecoundReview) : false;
 
-    // --- NEW: Redesigned Main Two-Panel Layout ---
     return (
         <div className="min-h-screen bg-[#0a091e] text-gray-200 font-sans">
             <div className="grid grid-cols-1 lg:grid-cols-4 xl:grid-cols-3 h-screen">
                 
-                {/* --- Left Sidebar for Navigation --- */}
                 <aside className="col-span-1 bg-black/30 lg:h-screen flex flex-col border-r border-purple-500/20">
                     <div className="p-4 border-b border-purple-500/20">
-                        <h2 className="text-xl font-bold">Review Sectors</h2>
+                        <h2 className="text-xl font-bold">Assigned Teams</h2>
                     </div>
                     
-                    <div className="flex p-2 bg-black/20">
-                        {sectors.map((sector, index) => (
-                            <button key={sector} className={`flex-1 px-3 py-2 text-sm font-bold rounded-md transition-all ${currentSector === index ? 'bg-purple-600 text-white' : 'hover:bg-white/10'}`} onClick={() => handleSectorChange(index)}>
-                                {sector}
-                            </button>
-                        ))}
-                    </div>
-
                     <div className="p-4 relative">
                         <IconSearch />
                         <input
                             type="text"
-                            placeholder={`Search in ${sectors[currentSector]}...`}
+                            placeholder={`Search by Name or Number...`}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="w-full bg-white/5 rounded-lg pl-12 pr-4 py-2.5 border-2 border-transparent focus:outline-none focus:border-purple-500 transition-colors"
@@ -257,14 +248,20 @@ function Review() {
                     <div className="flex-grow overflow-y-auto px-4 pb-4 space-y-2">
                         {filteredTeams.length > 0 ? (
                             filteredTeams.map((team, index) => {
-                                const isMarked = reviewRound === 1 ? team.FirstReview : reviewRound === 2 ? team.SecoundReview : team.ThirdReview;
+                                const isMarked = reviewRound === 1 ? team.FirstReview : team.SecoundReview;
                                 return (
                                     <button
                                         key={team._id}
                                         onClick={() => handleTeamSelect(index)}
                                         className={`w-full text-left p-3 rounded-lg flex justify-between items-center transition-all duration-200 border-2 ${currentTeamIndex === index ? 'bg-purple-500/20 border-purple-500' : 'bg-white/5 border-transparent hover:bg-white/10'}`}
                                     >
-                                        <span className="font-medium truncate">{team.teamname}</span>
+                                        <div className="flex items-center gap-3 overflow-hidden">
+                                            <span className="text-sm font-bold text-gray-500 w-6 text-center">{team.teamNumber}.</span>
+                                            <div className="flex flex-col overflow-hidden">
+                                                <span className="font-medium truncate">{team.teamname}</span>
+                                                <span className="text-xs text-gray-400 truncate">{team.Sector}</span>
+                                            </div>
+                                        </div>
                                         {isMarked && <IconCheckCircle />}
                                     </button>
                                 );
@@ -275,25 +272,34 @@ function Review() {
                     </div>
                 </aside>
 
-                {/* --- Right Content Area for Marking --- */}
                 <main className="lg:col-span-3 xl:col-span-2 h-screen flex flex-col">
                     <header className="flex-shrink-0 flex justify-between items-center p-4 bg-black/30 border-b border-purple-500/20">
                          <div className="relative">
                             <select value={reviewRound} onChange={(e) => { setReviewRound(Number(e.target.value)); setCurrentTeamIndex(null); }} className="px-4 py-2 rounded-lg bg-white/5 font-semibold appearance-none focus:outline-none focus:ring-2 focus:ring-purple-500">
                                 <option value={1}>First Review</option>
                                 <option value={2}>Second Review</option>
-                                <option value={3}>Third Review</option>
                             </select>
                          </div>
-                        <button onClick={() => { setIsAuthenticated(false); sessionStorage.removeItem("password"); }} className="flex items-center gap-2 px-4 py-2 bg-red-600/80 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors">
+                         <div className="text-center">
+                            <h2 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">
+                                {judge === 'judge1' ? "Judge 1 Terminal" : "Judge 2 Terminal"}
+                            </h2>
+                         </div>
+                        <button onClick={handleLogout} className="flex items-center gap-2 px-4 py-2 bg-red-600/80 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors">
                             <IconLogout /> Logout
                         </button>
                     </header>
 
                     {currentTeam ? (
                         <div className="flex-grow overflow-y-auto p-6 md:p-8">
-                            <h1 className="text-3xl font-bold mb-1 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">{currentTeam.teamname}</h1>
-                            <p className="text-gray-400 mb-6">Evaluating for <strong className="text-gray-200">{reviewRound === 1 ? 'First' : reviewRound === 2 ? 'Second' : 'Third'} Review</strong></p>
+                             <div className="flex items-baseline mb-1">
+                                <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">
+                                    <span className="text-gray-500 mr-2">{currentTeam.teamNumber}.</span>
+                                    {currentTeam.teamname}
+                                </h1>
+                                <span className="ml-4 px-2 py-1 text-xs font-semibold text-cyan-300 bg-cyan-500/20 rounded-full">{currentTeam.Sector}</span>
+                            </div>
+                            <p className="text-gray-400 mb-6">Evaluating for <strong className="text-gray-200">{reviewRound === 1 ? 'First' : 'Second'} Review</strong></p>
 
                             <div className="space-y-3">
                                 {Object.keys(scores).map((key) => (

@@ -878,8 +878,8 @@ function Teamdash() {
                                             {team.SecoundReview ? (<span className="px-3 py-1 text-sm font-bold text-green-300 bg-green-500/30 rounded-full">Complete</span>) : (<span className="px-3 py-1 text-sm font-bold text-yellow-300 bg-yellow-500/30 rounded-full animate-pulse">Pending</span>)}
                                         </div>
                                         <div className="flex justify-between items-center bg-gray-900/50 p-3 rounded-md">
-                                            <span className="font-semibold">Third Review</span>
-                                            {team.ThirdReview ? (<span className="px-3 py-1 text-sm font-bold text-green-300 bg-green-500/30 rounded-full">Complete</span>) : (<span className="px-3 py-1 text-sm font-bold text-yellow-300 bg-yellow-500/30 rounded-full animate-pulse">Pending</span>)}
+                                            <span className="font-semibold">Third Review only For Top 10</span>
+                                            
                                         </div>
                                     </div>
                                 </div>
