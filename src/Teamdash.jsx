@@ -27,10 +27,9 @@ const customModalStyles = {
     },
     overlay: { backgroundColor: 'rgba(0, 0, 0, 0.85)', zIndex: 1000 },
 };
-
-// +++++++++++++ START: UPDATED TIMELINE COMPONENT +++++++++++++
+// --- UPDATED TIMELINE COMPONENT ---
 const Timeline = ({ milestones, currentTime }) => {
-    // Find the index of the last completed milestone
+    
     const lastMilestoneIndex = milestones.slice().reverse().findIndex(e => e.time <= currentTime);
     const currentMilestoneIndex = milestones.length - 1 - lastMilestoneIndex;
 
@@ -86,7 +85,7 @@ const Timeline = ({ milestones, currentTime }) => {
         </div>
     );
 };
-// +++++++++++++ END: UPDATED TIMELINE COMPONENT +++++++++++++
+
 
 const VideoBackground = () => (
     <div className="fixed top-0 left-0 w-full h-full -z-10 overflow-hidden">
@@ -197,7 +196,7 @@ const AttendanceModal = ({ isOpen, onClose, team, attendanceIcon }) => {
         </Modal>
     );
 };
-// +++++++++++++ END: NEW ATTENDANCE MODAL +++++++++++++
+
 
 
 const ReminderModal = ({ isOpen, onClose, reminderText }) => ( <Modal isOpen={isOpen} onRequestClose={onClose} style={{...customModalStyles, content: {...customModalStyles.content, width: '850px'}}} contentLabel="Admin Reminder" appElement={document.getElementById('root') || undefined}> <div className="flex justify-between items-center mb-6"> <div className="flex items-center gap-3"> <span className="text-3xl animate-pulse">📢</span> <h2 className="text-2xl font-bold text-yellow-400 font-naruto">IMPORTANT REMINDER</h2> </div> <button onClick={onClose} className="text-gray-400 hover:text-white text-3xl">×</button> </div> <div className="text-center text-lg bg-gray-900/50 p-6 rounded-lg border border-yellow-500/50"> <p>{reminderText}</p> </div> <div className="mt-6 flex justify-end"> <button onClick={onClose} className="px-6 py-2 rounded-lg bg-orange-600 text-white hover:bg-orange-700">Acknowledged</button> </div> </Modal> );

@@ -154,19 +154,27 @@ const AttenCard = ({ team, round }) => {
 function Attd() {
     const [teams, setTeams] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [currentSector, setCurrentSector] = useState(0);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [selectedTeam, setSelectedTeam] = useState(null);
+    const [selectedSector, setSelectedSector] = useState(null);
     const sectors = ["Naruto", "Sasuke", "Itachi"];
     const location = useLocation();
     const params = new URLSearchParams(location.search);
     const round = params.get("round") || "1";
 
+    const sectorPasswords = {
+        Naruto: "att2025-naruto",
+        Sasuke: "att2025-sasuke",
+        Itachi: "att2025-itachi",
+    };
+
     useEffect(() => {
-        if (sessionStorage.getItem("password") === "att2025") {
+        const storedSector = sessionStorage.getItem("sector");
+        if (storedSector) {
             setIsAuthenticated(true);
+            setSelectedSector(storedSector);
         } else {
             setLoading(false);
         }
@@ -174,9 +182,10 @@ function Attd() {
 
     useEffect(() => {
         async function fetchData() {
+            if (!selectedSector) return;
             setLoading(true);
             try {
-                let res = await axios.get(`${api}/Hack/students`);
+                const res = await axios.get(`${api}/Hack/students/${selectedSector}`);
                 setTeams(res.data.teams);
             } catch (error) {
                 console.error("Error fetching teams:", error);
@@ -189,12 +198,12 @@ function Attd() {
         if (isAuthenticated) {
             fetchData();
         }
-    }, [isAuthenticated]);
+    }, [isAuthenticated, selectedSector]);
 
     const handleLogin = (e) => {
         e.preventDefault();
-        if (password === "att2025") {
-            sessionStorage.setItem("password", password);
+        if (password === sectorPasswords[selectedSector]) {
+            sessionStorage.setItem("sector", selectedSector);
             setError("");
             setIsAuthenticated(true);
         } else {
@@ -203,9 +212,11 @@ function Attd() {
     };
 
     const handleLogout = () => {
-        sessionStorage.removeItem("password");
+        sessionStorage.removeItem("sector");
         setIsAuthenticated(false);
+        setSelectedSector(null);
         setPassword("");
+        setTeams([]);
     };
 
     if (!isAuthenticated) {
@@ -213,29 +224,38 @@ function Attd() {
             <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4" style={{ backgroundImage: `url('/background.jpeg')`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
                 <div className="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
                 <div className="relative z-10 w-full max-w-md">
-                    <form onSubmit={handleLogin} className="bg-gray-800/50 backdrop-blur-lg border border-orange-500/30 rounded-2xl shadow-2xl p-8 space-y-6">
-                        <h2 className="text-3xl font-bold text-orange-400 text-center font-naruto">Attendance Terminal</h2>
-                        <input type="password" placeholder="Enter Access Code..." className="w-full px-4 py-3 bg-gray-700/80 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 transition-colors" value={password} onChange={(e) => setPassword(e.target.value)} required />
-                        {error && <p className="text-red-400 text-sm text-center">{error}</p>}
-                        <button type="submit" className="w-full bg-gradient-to-r from-orange-500 to-red-600 text-white py-3 rounded-lg shadow-lg font-bold transform hover:scale-105 transition-transform">Authorize</button>
-                    </form>
+                    {!selectedSector ? (
+                        <div className="bg-gray-800/50 backdrop-blur-lg border border-orange-500/30 rounded-2xl shadow-2xl p-8 space-y-4">
+                            <h2 className="text-3xl font-bold text-orange-400 text-center font-naruto">Select Your Sector</h2>
+                            {sectors.map(sector => (
+                                <button key={sector} onClick={() => setSelectedSector(sector)} className="w-full bg-gray-700/80 hover:bg-orange-600 text-white py-3 rounded-lg shadow-lg font-bold transition-all transform hover:scale-105">
+                                    {sector}
+                                </button>
+                            ))}
+                        </div>
+                    ) : (
+                        <form onSubmit={handleLogin} className="bg-gray-800/50 backdrop-blur-lg border border-orange-500/30 rounded-2xl shadow-2xl p-8 space-y-6">
+                            <h2 className="text-3xl font-bold text-orange-400 text-center font-naruto">{selectedSector} Sector Login</h2>
+                            <input type="password" placeholder="Enter Access Code..." className="w-full px-4 py-3 bg-gray-700/80 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 transition-colors" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                            {error && <p className="text-red-400 text-sm text-center">{error}</p>}
+                            <div className="flex gap-4">
+                                <button type="button" onClick={() => setSelectedSector(null)} className="w-1/3 bg-gray-600 hover:bg-gray-700 text-white py-3 rounded-lg shadow-lg font-bold transition-transform hover:scale-105">Back</button>
+                                <button type="submit" className="w-2/3 bg-gradient-to-r from-orange-500 to-red-600 text-white py-3 rounded-lg shadow-lg font-bold transform hover:scale-105 transition-transform">Authorize</button>
+                            </div>
+                        </form>
+                    )}
                 </div>
             </div>
         );
     }
-
-    const getSectorTeams = (sectorIndex) => {
-        const selectedSector = sectors[sectorIndex];
-        return teams.filter((team) => team.Sector === selectedSector);
-    };
-
+    
     return (
         <div className="min-h-screen bg-gray-900 text-white font-sans" style={{ backgroundImage: `url('/background1.jpeg')`, backgroundSize: 'cover', backgroundAttachment: 'fixed' }}>
             <div className="absolute inset-0 bg-black/70 backdrop-blur-md"></div>
             <div className="relative z-10 flex flex-col min-h-screen">
                 <header className="sticky top-0 bg-black/30 backdrop-blur-lg border-b border-orange-500/30 p-4 shadow-lg">
                     <div className="container mx-auto flex justify-between items-center">
-                        <h1 className="text-2xl font-bold text-orange-400 font-naruto tracking-wider">ATTENDANCE - ROUND {round}</h1>
+                        <h1 className="text-2xl font-bold text-orange-400 font-naruto tracking-wider">{selectedSector} - ROUND {round}</h1>
                         <button onClick={handleLogout} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-md font-semibold">Logout</button>
                     </div>
                 </header>
@@ -245,13 +265,10 @@ function Attd() {
                         <div className="flex justify-center items-center h-64"><div className="animate-spin rounded-full h-16 w-16 border-b-2 border-orange-500"></div></div>
                     ) : (
                         <>
-                            <div className="bg-black/20 p-2 rounded-xl flex flex-wrap justify-center mb-6 max-w-lg mx-auto border border-gray-700">
-                                {sectors.map((sector, index) => <button key={sector} className={`flex-1 mx-1 px-4 py-2 rounded-lg transition-all font-semibold ${currentSector === index ? "bg-orange-600 scale-105 shadow-lg shadow-orange-500/30" : "bg-gray-700/50 hover:bg-gray-600"}`} onClick={() => { setCurrentSector(index); setSelectedTeam(null); }}>{sector}</button>)}
-                            </div>
-                            <div className="px-6 mb-6 flex justify-center">
+                           <div className="px-6 mb-6 flex justify-center">
                                 <select value={selectedTeam || ""} onChange={(e) => setSelectedTeam(e.target.value)} className="w-full max-w-md px-4 py-3 rounded-lg bg-gray-800 text-white border-2 border-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-colors">
-                                    <option value="">-- Select a Team from {sectors[currentSector]} Sector --</option>
-                                    {getSectorTeams(currentSector).map((t) => <option key={t._id} value={t._id}>{t.teamname}</option>)}
+                                    <option value="">-- Select a Team --</option>
+                                    {teams.map((t) => <option key={t._id} value={t._id}>{t.teamname}</option>)}
                                 </select>
                             </div>
                             <div className="px-2">
