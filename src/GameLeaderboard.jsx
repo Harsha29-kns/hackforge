@@ -25,7 +25,7 @@ function GameLeaderboard() {
         async function fetchData() {
             try {
                 const response = await axios.get(`${api}/Hack/students`);
-                const calculatedData = response.data.map(team => ({
+                const calculatedData = response.data.teams.map(team => ({
                     ...team,
                     // UPDATED: Now includes all four scores in the total
                     totalGameScore: (team.memoryGameScore || 0) + (team.numberPuzzleScore || 0) + (team.internalGameScore || 0) + (team.stopTheBarScore || 0)

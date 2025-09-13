@@ -50,7 +50,7 @@ function JudgeLeaderboard() {
         async function fetchData() {
             try {
                 const response = await axios.get(`${api}/Hack/students`);
-                const allTeams = response.data;
+                const allTeams = response.data.teams;
 
                 // Sort teams alphabetically once to ensure consistent slicing
                 const sortedSasukeTeams = allTeams

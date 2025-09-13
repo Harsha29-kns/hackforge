@@ -1,11 +1,11 @@
 import { Route, Routes } from 'react-router';
 import './App.css';
 import Admin from './admin';
-import Attd from './attdence';
+import Attd from './attendance';
 import Teamdash from './Teamdash';
 import Review from './Review';
 import TeamMarks from './TeamMarks';
-import AttdenceDetail from './AttdenceDetail';
+import AttendanceDetail from './AttendanceDetail';
 import Instructions from "./Instructions";
 import AdminControls from './AdminControls'
 import Landing from './Landing';
@@ -18,11 +18,11 @@ function App() {
         <Route path='/' element={<Instructions/>}/>
         <Route path='/home' element={<Landing/>}/>
         <Route path='/admin-login' element={<Admin/>}/>
-        <Route path='/attdence' element={<Attd/>}/>
+        <Route path='/qratt' element={<Attd/>}/>
         <Route path='/teamlogin' element={<Teamdash/>}/>
         <Route path='/review' element={<Review/>}/>
         <Route path='/TeamMarks' element={<TeamMarks/>}/>
-        <Route path='/attdencedetails' element={<AttdenceDetail/>}/>
+        <Route path='/attendance-details' element={<AttendanceDetail/>}/>
         <Route path='/admin-controls' element={<AdminControls />} />
         <Route path='/game-leaderboard' element={<GameLeaderboard />} />
         <Route path='/judge-leaderboard' element={<JudgeLeaderboard />} />

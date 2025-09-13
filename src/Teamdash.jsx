@@ -30,59 +30,58 @@ const customModalStyles = {
 
 // +++++++++++++ START: UPDATED TIMELINE COMPONENT +++++++++++++
 const Timeline = ({ milestones, currentTime }) => {
-    const [timeRemaining, setTimeRemaining] = useState('');
+    // Find the index of the last completed milestone
+    const lastMilestoneIndex = milestones.slice().reverse().findIndex(e => e.time <= currentTime);
+    const currentMilestoneIndex = milestones.length - 1 - lastMilestoneIndex;
 
-    // --- Logic for Current and Next Milestone ---
-    const currentMilestoneIndex = milestones.slice().reverse().findIndex(e => e.time <= currentTime);
-    const lastMilestoneIndex = milestones.length - 1 - currentMilestoneIndex;
-    const currentMilestone = milestones[lastMilestoneIndex];
-    const nextMilestone = milestones.find(e => e.time > currentTime && e.major);
-
-    // --- Re-added Logic for Progress Bar Calculation ---
+    // Calculate the overall progress percentage
     const totalDuration = milestones[milestones.length - 1].time - milestones[0].time;
     const elapsedDuration = currentTime - milestones[0].time;
     const progressPercentage = Math.max(0, Math.min(100, (elapsedDuration / totalDuration) * 100));
 
-    // --- Logic for Countdown Timer ---
-    useEffect(() => {
-        if (!nextMilestone) {
-            setTimeRemaining('Event Finished');
-            return;
-        }
-        const interval = setInterval(() => {
-            const totalSeconds = Math.floor((nextMilestone.time - new Date()) / 1000);
-            if (totalSeconds < 0) {
-                setTimeRemaining('00:00:00');
-                return;
-            }
-            const hours = Math.floor(totalSeconds / 3600);
-            const minutes = Math.floor((totalSeconds % 3600) / 60);
-            const seconds = totalSeconds % 60;
-            setTimeRemaining(
-                `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
-            );
-        }, 1000);
-        return () => clearInterval(interval);
-    }, [nextMilestone, currentTime]);
-
     return (
-        <div className="text-sm">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-4 items-center">
-                <div className="text-gray-300 text-center md:text-left">
-                    <span className="font-bold text-orange-400 block md:inline">NOW: </span>
-                    {currentMilestone ? currentMilestone.name : "Event has not started."}
+        // Increased vertical padding to make space for labels
+        <div className="w-full py-10">
+            <div className="relative">
+                {/* Background Line */}
+                <div className="absolute top-1/2 -translate-y-1/2 left-0 w-full h-1 bg-gray-700 rounded-full"></div>
+                
+                {/* Progress Line */}
+                <div 
+                    className="absolute top-1/2 -translate-y-1/2 left-0 h-1 bg-gradient-to-r from-orange-500 to-yellow-400 rounded-full" 
+                    style={{ width: `${progressPercentage}%` }}
+                ></div>
+
+                {/* Milestones */}
+                <div className="relative flex justify-between">
+                    {milestones.map((milestone, index) => {
+                        const isCompleted = index <= currentMilestoneIndex;
+                        const isCurrent = index === currentMilestoneIndex;
+
+                        return (
+                            <div key={index} className="relative flex flex-col items-center">
+                                {/* Dot */}
+                                <div 
+                                    className={`w-4 h-4 rounded-full border-2 border-gray-900 z-10 transition-all duration-300
+                                        ${isCompleted 
+                                            ? (isCurrent ? 'bg-orange-500 scale-125 animate-pulse' : 'bg-green-500') 
+                                            : 'bg-gray-500'}
+                                    `}
+                                ></div>
+                                
+                                {/* Always visible Label */}
+                                <div 
+                                    className={`absolute w-max text-center text-xs
+                                        ${index % 2 === 0 ? 'top-full mt-3' : 'bottom-full mb-3'}
+                                    `}
+                                >
+                                    <p className={`font-bold ${isCurrent ? 'text-orange-300' : 'text-gray-200'}`}>{milestone.name}</p>
+                                    <p className="text-gray-400">{new Date(milestone.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                </div>
+                            </div>
+                        );
+                    })}
                 </div>
-                <div className="text-lg font-bold text-white tracking-widest bg-white/5 p-2 rounded-lg text-center">
-                    {timeRemaining}
-                </div>
-                <div className="text-gray-300 text-center md:text-right">
-                    <span className="font-bold text-orange-400 block md:inline">NEXT: </span>
-                    {nextMilestone ? nextMilestone.name : "No upcoming milestones."}
-                </div>
-            </div>
-            {/* --- Re-added Progress Bar JSX --- */}
-            <div className="w-full bg-gray-700 rounded-full h-2.5 mt-3">
-                <div className="bg-gradient-to-r from-orange-500 to-yellow-400 h-2.5 rounded-full" style={{ width: `${progressPercentage}%` }}></div>
             </div>
         </div>
     );
@@ -114,13 +113,29 @@ const QrModal = ({ isOpen, onClose, qrUrl, name }) => (
     </Modal>
 );
 
+// +++++++++++++ START: NEW ATTENDANCE MODAL +++++++++++++
 const AttendanceModal = ({ isOpen, onClose, team, attendanceIcon }) => {
     const getAttendanceStatus = (member, round) => member?.attendance?.find(a => a.round === round)?.status || null;
     const rounds = [1, 2, 3, 4, 5, 6, 7];
+    
+    // Calculate overall attendance percentage
+    const totalMembers = (team?.teamMembers?.length || 0) + 1; // +1 for the lead
+    let totalPresent = 0;
+    if (team) {
+        const allMembers = [team.lead, ...team.teamMembers];
+        allMembers.forEach(member => {
+            rounds.forEach(round => {
+                if (getAttendanceStatus(member, round) === 'Present') {
+                    totalPresent++;
+                }
+            });
+        });
+    }
+    const attendancePercentage = totalMembers > 0 ? ((totalPresent / (totalMembers * rounds.length)) * 100).toFixed(1) : 0;
 
     return (
-        <Modal isOpen={isOpen} onRequestClose={onClose} style={{...customModalStyles, content: {...customModalStyles.content, width: '850px'}}} contentLabel="Attendance Tracker" appElement={document.getElementById('root') || undefined}>
-            <div className="flex justify-between items-center mb-6">
+        <Modal isOpen={isOpen} onRequestClose={onClose} style={{...customModalStyles, content: {...customModalStyles.content, width: '950px'}}} contentLabel="Attendance Tracker" appElement={document.getElementById('root') || undefined}>
+            <div className="flex justify-between items-center mb-4">
                 <div className="flex items-center gap-4">
                     <span className="text-4xl">📊</span>
                     <div>
@@ -130,51 +145,60 @@ const AttendanceModal = ({ isOpen, onClose, team, attendanceIcon }) => {
                 </div>
                 <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors text-3xl font-light">×</button>
             </div>
-            <div className="max-h-[60vh] overflow-y-auto pr-2">
+            
+            {/* Overall Progress */}
+            <div className="mb-6 bg-gray-900/50 p-4 rounded-lg border border-gray-700">
+                <h3 className="text-lg font-semibold text-center text-gray-300 mb-2">Overall Team Attendance</h3>
+                <div className="flex items-center justify-center gap-4">
+                    <div className="w-full bg-gray-700 rounded-full h-4">
+                        <div className="bg-gradient-to-r from-green-500 to-teal-400 h-4 rounded-full" style={{ width: `${attendancePercentage}%` }}></div>
+                    </div>
+                    <span className="text-xl font-bold text-green-400">{attendancePercentage}%</span>
+                </div>
+            </div>
+
+            <div className="max-h-[60vh] overflow-y-auto pr-2 grid grid-cols-1 md:grid-cols-2 gap-4">
                 {team ? (
-                    <div className="space-y-4">
-                        {/* Table Header */}
-                        <div className="grid grid-cols-12 gap-4 px-4 text-sm font-semibold text-gray-400 uppercase">
-                            <div className="col-span-5">Member</div>
-                            {rounds.map(round => (
-                                <div key={`header-${round}`} className="col-span-1 text-center">R{round}</div>
-                            ))}
-                        </div>
-
-                        {/* Lead Row */}
-                        <div className="grid grid-cols-12 gap-4 items-center bg-yellow-500/10 p-4 rounded-lg border border-yellow-500/30">
-                            <div className="col-span-5">
-                                <p className="font-bold text-yellow-300">{team.name}</p>
-                                <p className="text-xs text-yellow-400/70">Team Lead</p>
-                            </div>
-                            {rounds.map(round => (
-                                <div key={`lead-round-${round}`} className="col-span-1 flex justify-center" title={`Round ${round}: ${getAttendanceStatus(team.lead, round) || 'Not Marked'}`}>
-                                    {attendanceIcon(getAttendanceStatus(team.lead, round))}
-                                </div>
-                            ))}
-                        </div>
-
-                        {/* Member Rows */}
-                        {team.teamMembers.map((member, idx) => (
-                            <div key={idx} className="grid grid-cols-12 gap-4 items-center bg-gray-800/60 p-4 rounded-lg">
-                                <div className="col-span-5">
-                                    <p className="font-semibold text-white">{member.name}</p>
-                                </div>
+                    <>
+                        {/* Lead Card */}
+                        <div className="bg-yellow-500/10 p-4 rounded-lg border border-yellow-500/30">
+                            <p className="font-bold text-lg text-yellow-300">{team.name}</p>
+                            <p className="text-xs text-yellow-400/70 mb-3">Team Lead</p>
+                            <div className="grid grid-cols-7 gap-2">
                                 {rounds.map(round => (
-                                    <div key={`member-${idx}-round-${round}`} className="col-span-1 flex justify-center" title={`Round ${round}: ${getAttendanceStatus(member, round) || 'Not Marked'}`}>
-                                        {attendanceIcon(getAttendanceStatus(member, round))}
+                                    <div key={`lead-${round}`} className="flex flex-col items-center">
+                                        <span className="text-xs font-bold text-gray-400 mb-1">R{round}</span>
+                                        {attendanceIcon(getAttendanceStatus(team.lead, round))}
                                     </div>
                                 ))}
                             </div>
+                        </div>
+
+                        {/* Member Cards */}
+                        {team.teamMembers.map((member, idx) => (
+                            <div key={idx} className="bg-gray-800/60 p-4 rounded-lg">
+                                <p className="font-semibold text-white text-lg">{member.name}</p>
+                                <p className="text-xs text-gray-400/70 mb-3">Team Member</p>
+                                <div className="grid grid-cols-7 gap-2">
+                                    {rounds.map(round => (
+                                        <div key={`member-${idx}-${round}`} className="flex flex-col items-center">
+                                             <span className="text-xs font-bold text-gray-400 mb-1">R{round}</span>
+                                            {attendanceIcon(getAttendanceStatus(member, round))}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
                         ))}
-                    </div>
+                    </>
                 ) : (
-                    <p className="text-center text-gray-400 py-8">Loading team attendance data...</p>
+                    <p className="text-center text-gray-400 py-8 col-span-2">Loading team attendance data...</p>
                 )}
             </div>
         </Modal>
     );
 };
+// +++++++++++++ END: NEW ATTENDANCE MODAL +++++++++++++
+
 
 const ReminderModal = ({ isOpen, onClose, reminderText }) => ( <Modal isOpen={isOpen} onRequestClose={onClose} style={{...customModalStyles, content: {...customModalStyles.content, width: '850px'}}} contentLabel="Admin Reminder" appElement={document.getElementById('root') || undefined}> <div className="flex justify-between items-center mb-6"> <div className="flex items-center gap-3"> <span className="text-3xl animate-pulse">📢</span> <h2 className="text-2xl font-bold text-yellow-400 font-naruto">IMPORTANT REMINDER</h2> </div> <button onClick={onClose} className="text-gray-400 hover:text-white text-3xl">×</button> </div> <div className="text-center text-lg bg-gray-900/50 p-6 rounded-lg border border-yellow-500/50"> <p>{reminderText}</p> </div> <div className="mt-6 flex justify-end"> <button onClick={onClose} className="px-6 py-2 rounded-lg bg-orange-600 text-white hover:bg-orange-700">Acknowledged</button> </div> </Modal> );
 const AssistanceModal = ({ isOpen, onClose, isSubmittingIssue, issueError, issueText, setIssueText, handleIssueSubmit }) => ( <Modal isOpen={isOpen} onRequestClose={onClose} style={{...customModalStyles, content: {...customModalStyles.content, width: '850px'}}} contentLabel="Request Assistance" appElement={document.getElementById('root') || undefined}> <div className="text-white"> <div className="flex justify-between items-center mb-6"> <h2 className="text-2xl font-bold text-orange-400 font-naruto">Request Assistance</h2> <button onClick={onClose} className="text-gray-400 hover:text-white text-3xl" disabled={isSubmittingIssue}>×</button> </div> {issueError && ( <div className="bg-red-900/50 text-red-300 p-3 rounded-lg mb-4 text-center">{issueError}</div> )} <p className="text-gray-300 mb-4">If you have a technical problem or need help, please describe it below. Our team will reach you shortly.</p> <textarea value={issueText} onChange={(e) => setIssueText(e.target.value)} placeholder="Describe your problem here..." className="w-full h-40 p-4 bg-gray-700 border border-gray-600 rounded-xl" disabled={isSubmittingIssue} /> <div className="mt-6 flex justify-end gap-4"> <button onClick={onClose} className="px-6 py-2 rounded-lg border border-gray-600 hover:bg-gray-700" disabled={isSubmittingIssue}>Cancel</button> <button onClick={handleIssueSubmit} className="px-6 py-2 rounded-lg bg-orange-600 text-white hover:bg-orange-700 disabled:opacity-50" disabled={isSubmittingIssue || !issueText.trim()}> {isSubmittingIssue ? 'Submitting...' : 'Submit Request'} </button> </div> </div> </Modal> );
@@ -275,6 +299,42 @@ const GameModal = ({ isOpen, onClose, onGameEnd, isSubmitting }) => (
         </div>
     </Modal>
 );
+
+// +++++++++++++ START: NEW ATTENDANCE INFO COMPONENT +++++++++++++
+const AttendanceInfo = ({ rounds, currentTime, onOpenModal }) => {
+    // Find the next upcoming round
+    const now = currentTime.getHours() * 60 + currentTime.getMinutes();
+    let nextRoundIndex = rounds.findIndex(r => {
+        const [time, period] = r.time.split(' ');
+        let [hours, minutes] = time.split(':').map(Number);
+        if (period === 'PM' && hours !== 12) hours += 12;
+        if (period === 'AM' && hours === 12) hours = 0;
+        const roundTime = hours * 60 + minutes;
+        return roundTime >= now;
+    });
+    if (nextRoundIndex === -1) nextRoundIndex = rounds.length; // All rounds passed
+
+    return (
+        <div className="bg-black/20 rounded-lg border border-gray-700/50 p-5 space-y-4">
+            <h2 className="text-xl font-bold font-naruto text-orange-400 border-b-2 border-orange-500/30 pb-2">ATTENDANCE SCHEDULE</h2>
+            <div className="space-y-2">
+                {rounds.map((r, index) => (
+                    <div key={r.round} className={`flex justify-between items-center p-2 rounded-md ${index === nextRoundIndex -1 ? 'bg-orange-500/30' : 'bg-gray-800/50'}`}>
+                        <span className={`font-semibold ${index === nextRoundIndex -1 ? 'text-orange-300' : ''}`}>Round {r.round}</span>
+                        <span className={`text-sm font-mono ${index === nextRoundIndex -1 ? 'text-white' : 'text-gray-400'}`}>{r.time}</span>
+                    </div>
+                ))}
+            </div>
+            <button 
+                onClick={onOpenModal} 
+                className="w-full mt-2 p-3 bg-blue-600/80 hover:bg-blue-600 rounded-lg text-center font-bold"
+            >
+                View Full Details
+            </button>
+        </div>
+    );
+};
+// +++++++++++++ END: NEW ATTENDANCE INFO COMPONENT +++++++++++++
 
 
 function Teamdash() {
@@ -594,9 +654,9 @@ function Teamdash() {
 
     const attendanceIcon = (status) => {
         switch (status) {
-            case "Present": return ( <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center mx-auto"><img src={narutoLeaf} alt="Present" className="w-6 h-6"/></div> );
-            case "Absent": return ( <div className="w-10 h-10 rounded-full bg-red-500 flex items-center justify-center mx-auto"><img src={absent} alt="Absent" className="w-6 h-6"/></div> );
-            default: return ( <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center mx-auto"><span className="text-gray-500 text-lg font-bold">?</span></div> );
+            case "Present": return ( <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center mx-auto"><img src={narutoLeaf} alt="Present" className="w-5 h-5"/></div> );
+            case "Absent": return ( <div className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center mx-auto"><img src={absent} alt="Absent" className="w-5 h-5"/></div> );
+            default: return ( <div className="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center mx-auto"><span className="text-gray-400 text-sm font-bold">?</span></div> );
         }
     };
     
@@ -696,7 +756,7 @@ function Teamdash() {
                         >
                             {loading ? (
                                 <>
-                                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                     </svg>
@@ -710,7 +770,7 @@ function Teamdash() {
         );
     }
     
-    // --- UPDATED Milestones Array ---
+    // --- EVENT DATA ---
     const eventMilestones = [ 
         { name: 'Event Start', time: new Date('2025-09-03T09:00:00'), major: false }, 
         { name: 'Domain Selection Opens', time: new Date('2025-09-03T10:00:00'), major: true }, 
@@ -719,7 +779,17 @@ function Teamdash() {
         { name: 'Dinner', time: new Date('2025-09-03T21:00:00'), major: false }, 
         { name: 'Mid-Point Evaluation', time: new Date('2025-09-03T22:35:00'), major: true }, 
         { name: 'Final Presentations', time: new Date('2025-09-03T23:21:00'), major: true }, 
-        { name: 'Event End', time: new Date('2025-09-03T23:21:00'), major: true }, 
+        { name: 'Event End', time: new Date('2025-09-13T23:21:00'), major: true }, 
+    ];
+
+    const attendanceRounds = [
+        { round: 1, time: '09:30 AM' },
+        { round: 2, time: '11:30 AM' },
+        { round: 3, time: '02:00 PM' },
+        { round: 4, time: '04:30 PM' },
+        { round: 5, time: '07:00 PM' },
+        { round: 6, time: '09:30 PM' },
+        { round: 7, time: '11:30 PM' }
     ];
     
     const intelFeed = [ ...(reminders?.map(r => ({ ...r, type: 'reminder', timestamp: new Date(r.time) })) || []), ...(team?.issues?.map(i => ({ ...i, type: 'issue', timestamp: new Date(i.timestamp) })) || []) ].sort((a, b) => b.timestamp - a.timestamp);
@@ -808,145 +878,159 @@ function Teamdash() {
 
                     <main className="flex-grow container mx-auto px-6 pt-4 pb-6 overflow-y-auto">
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            <div className="lg:col-span-1 flex flex-col bg-black/20 rounded-lg border border-gray-700/50 p-5">
-                                <h2 className="text-xl font-bold font-naruto text-orange-400 border-b-2 border-orange-500/30 pb-2 mb-4">SQUAD ROSTER</h2>
-                                <div className="space-y-3 overflow-y-auto pr-2">
-                                    <div className="flex items-center justify-between p-3 bg-yellow-500/10 rounded-lg">
-                                        <div className="flex items-center gap-3">
-                                            <img src={king} alt="Leader" className="w-9 h-9"/>
-                                            <div>
-                                                <p className="font-bold text-yellow-300">{team.name}</p>
-                                                <p className="text-xs text-yellow-400/70">{team.registrationNumber}</p>
+                            {/* Left Column */}
+                            <div className="lg:col-span-2 flex flex-col gap-6">
+                                {/* Mission Control */}
+                                <div className="bg-black/20 rounded-lg border border-gray-700/50 p-5">
+                                    <h2 className="text-xl font-bold font-naruto text-orange-400 border-b-2 border-orange-500/30 pb-2 mb-4">MISSION CONTROL</h2>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="bg-gray-800/60 p-4 rounded-lg flex-grow flex flex-col justify-center">
+                                            <h3 className="font-bold text-lg mb-3 text-center">Domain Assignment</h3>
+                                            {team.Domain ? (
+                                                <p className="text-center text-3xl font-bold text-green-400 py-2">{team.Domain}</p>
+                                            ) : (
+                                                DomainOpen ? (
+                                                    [...new Set(DomainData.map(item => item.set))].length > 0 ? (
+                                                        <div className="flex gap-2 justify-center">
+                                                            {[...new Set(DomainData.map(item => item.set))].sort().map(set => ( 
+                                                                <button key={set} onClick={() => handleSetClick(set)} className="w-full py-3 bg-orange-600 hover:bg-orange-700 rounded-lg font-bold">Choose {set}</button> 
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <p className="text-center text-gray-400 animate-pulse">Loading domain sets...</p>
+                                                    )
+                                                ) : (
+                                                    domainOpenTime ? (
+                                                        <div className="text-center text-gray-400 flex flex-col items-center justify-center gap-3 h-full">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                                                            <p className="font-semibold text-lg">Domain selection will open soon...</p>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="text-center text-gray-400 flex flex-col items-center justify-center gap-3 h-full">
+                                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                                                              <p className="font-semibold text-lg">Domain selection is currently closed.</p>
+                                                         </div>
+                                                    )
+                                                )
+                                            )}
+                                        </div>
+
+                                        <div className="bg-gray-800/60 p-4 rounded-lg">
+                                            <h3 className="font-bold text-lg mb-3 text-center">Evaluation Status</h3>
+                                            <div className="space-y-3">
+                                                <div className="flex justify-between items-center bg-gray-900/50 p-3 rounded-md">
+                                                    <span className="font-semibold">First Review</span>
+                                                    {team.FirstReview ? (<span className="px-3 py-1 text-sm font-bold text-green-300 bg-green-500/30 rounded-full">Complete</span>) : (<span className="px-3 py-1 text-sm font-bold text-yellow-300 bg-yellow-500/30 rounded-full animate-pulse">Pending</span>)}
+                                                </div>
+                                                <div className="flex justify-between items-center bg-gray-900/50 p-3 rounded-md">
+                                                    <span className="font-semibold">Second Review</span>
+                                                    {team.SecoundReview ? (<span className="px-3 py-1 text-sm font-bold text-green-300 bg-green-500/30 rounded-full">Complete</span>) : (<span className="px-3 py-1 text-sm font-bold text-yellow-300 bg-yellow-500/30 rounded-full animate-pulse">Pending</span>)}
+                                                </div>
+                                                <div className="flex justify-between items-center bg-gray-900/50 p-3 rounded-md">
+                                                    <span className="font-semibold">Third Review only For Top 10</span>
+                                                    
+                                                </div>
                                             </div>
                                         </div>
-                                        {team.lead?.qrCode && ( <button onClick={() => setViewingQr({ url: team.lead.qrCode, name: team.name })} className="bg-white p-1 rounded-md hover:scale-110 transition-transform"> <img src={team.lead.qrCode} alt="QR Code" className="w-12 h-12"/> </button> )}
                                     </div>
-                                    {team.teamMembers.map((member, i) => (
-                                        <div key={i} className="flex items-center justify-between p-3 bg-gray-800/60 rounded-lg">
+                                </div>
+                                 {/* Side Quests */}
+                                 <div className="bg-black/20 rounded-lg border border-gray-700/50 p-5">
+                                    <h2 className="text-xl font-bold font-naruto text-orange-400 border-b-2 border-orange-500/30 pb-2 mb-4">SIDE QUESTS</h2>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        <button
+                                           onClick={() => setIsGameModalOpen(true)}
+                                           disabled={team.memoryGamePlayed || !isGameOpen}
+                                           className="w-full p-4 bg-indigo-600/80 hover:bg-indigo-600 rounded-lg text-center font-bold disabled:opacity-70 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-3 min-h-[72px]"
+                                        >
+                                           {team.memoryGamePlayed ? ( <span className="text-lg">Game Score: {team.memoryGameScore}</span> ) : isGameOpen ? ( <span className="text-lg">Memory Flip Challenge</span> ) : (
+                                                <>
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                                                    <span className="text-base">Game will unlock at {formatUnlockTime(gameOpenTime)}</span>
+                                                </>
+                                           )}
+                                        </button>
+                                        <button
+                                            onClick={() => setIsStopTheBarModalOpen(true)}
+                                            disabled={team.stopTheBarPlayed || !isBarGameOpen}
+                                            className="w-full p-4 bg-pink-600/80 hover:bg-pink-700 rounded-lg text-center font-bold disabled:opacity-70 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-3 min-h-[72px]"
+                                        >
+                                            {team.stopTheBarPlayed ? (
+                                                <span className="text-lg">Timing Score: {team.stopTheBarScore}</span>
+                                            ) : isBarGameOpen ? (
+                                                <span className="text-lg">Flash Game Challenge</span>
+                                            ) : (
+                                                <>
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                                                    <span className="text-base">Unlocks at {formatUnlockTime(barGameOpenTime)}</span>
+                                                </>
+                                            )}
+                                        </button>
+                                        <button
+                                            onClick={() => setIsNumberPuzzleModalOpen(true)}
+                                            disabled={team.numberPuzzlePlayed || !isPuzzleOpen}
+                                            className="w-full p-4 bg-teal-600/80 hover:bg-teal-700 rounded-lg text-center font-bold disabled:opacity-70 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-3 min-h-[72px]"
+                                            >
+                                            {team.numberPuzzlePlayed ? ( <span className="text-lg">Puzzle Score: {team.numberPuzzleScore}</span> ) : isPuzzleOpen ? ( <span className="text-lg">Number Puzzle Challenge</span> ) : (
+                                                    <>
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                                                        <span className="text-base">Puzzle will unlock at {formatUnlockTime(puzzleOpenTime)}</span>
+                                                    </>
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
+                                {/* Roster */}
+                                <div className="lg:col-span-1 flex flex-col bg-black/20 rounded-lg border border-gray-700/50 p-5">
+                                    <h2 className="text-xl font-bold font-naruto text-orange-400 border-b-2 border-orange-500/30 pb-2 mb-4">SQUAD ROSTER</h2>
+                                    <div className="space-y-3 overflow-y-auto pr-2">
+                                        <div className="flex items-center justify-between p-3 bg-yellow-500/10 rounded-lg">
                                             <div className="flex items-center gap-3">
-                                                <span className="w-9 h-9 flex-shrink-0 flex items-center justify-center bg-orange-500/20 rounded-full font-bold">{member.name.charAt(0)}</span>
-                                                <div> <p className="font-semibold">{member.name}</p> <p className="text-xs text-gray-400">{member.registrationNumber}</p> </div>
+                                                <img src={king} alt="Leader" className="w-9 h-9"/>
+                                                <div>
+                                                    <p className="font-bold text-yellow-300">{team.name}</p>
+                                                    <p className="text-xs text-yellow-400/70">{team.registrationNumber}</p>
+                                                </div>
                                             </div>
-                                            {member.qrCode && ( <button onClick={() => setViewingQr({ url: member.qrCode, name: member.name })} className="bg-white p-1 rounded-md hover:scale-110 transition-transform"> <img src={member.qrCode} alt="QR Code" className="w-12 h-12"/> </button> )}
+                                            {team.lead?.qrCode && ( <button onClick={() => setViewingQr({ url: team.lead.qrCode, name: team.name })} className="bg-white p-1 rounded-md hover:scale-110 transition-transform"> <img src={team.lead.qrCode} alt="QR Code" className="w-12 h-12"/> </button> )}
                                         </div>
-                                    ))}
-                                </div>
-                            </div>
-                            
-                            <div className="lg:col-span-1 flex flex-col bg-black/20 rounded-lg border border-gray-700/50 p-5 space-y-5">
-                                <h2 className="text-xl font-bold font-naruto text-orange-400 border-b-2 border-orange-500/30 pb-2">MISSION CONTROL</h2>
-                                <div className="bg-gray-800/60 p-4 rounded-lg flex-grow flex flex-col justify-center">
-                                    <h3 className="font-bold text-lg mb-3 text-center">Domain Assignment</h3>
-                                    {team.Domain ? (
-                                        <p className="text-center text-3xl font-bold text-green-400 py-2">{team.Domain}</p>
-                                    ) : (
-                                        DomainOpen ? (
-                                            [...new Set(DomainData.map(item => item.set))].length > 0 ? (
-                                                <div className="flex gap-2 justify-center">
-                                                    {[...new Set(DomainData.map(item => item.set))].sort().map(set => ( 
-                                                        <button key={set} onClick={() => handleSetClick(set)} className="w-full py-3 bg-orange-600 hover:bg-orange-700 rounded-lg font-bold">Choose {set}</button> 
-                                                    ))}
+                                        {team.teamMembers.map((member, i) => (
+                                            <div key={i} className="flex items-center justify-between p-3 bg-gray-800/60 rounded-lg">
+                                                <div className="flex items-center gap-3">
+                                                    <span className="w-9 h-9 flex-shrink-0 flex items-center justify-center bg-orange-500/20 rounded-full font-bold">{member.name.charAt(0)}</span>
+                                                    <div> <p className="font-semibold">{member.name}</p> <p className="text-xs text-gray-400">{member.registrationNumber}</p> </div>
                                                 </div>
-                                            ) : (
-                                                <p className="text-center text-gray-400 animate-pulse">Loading domain sets...</p>
-                                            )
-                                        ) : (
-                                            domainOpenTime ? (
-                                                <div className="text-center text-gray-400 flex flex-col items-center justify-center gap-3 h-full">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                                                    <p className="font-semibold text-lg">Domain selection will open soon...</p>
-                                                </div>
-                                            ) : (
-                                                <div className="text-center text-gray-400 flex flex-col items-center justify-center gap-3 h-full">
-                                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
-                                                      <p className="font-semibold text-lg">Domain selection is currently closed.</p>
-                                                 </div>
-                                            )
-                                        )
-                                    )}
-                                </div>
-
-                                <div className="bg-gray-800/60 p-4 rounded-lg">
-                                    <h3 className="font-bold text-lg mb-3 text-center">Evaluation Status</h3>
-                                    <div className="space-y-3">
-                                        <div className="flex justify-between items-center bg-gray-900/50 p-3 rounded-md">
-                                            <span className="font-semibold">First Review</span>
-                                            {team.FirstReview ? (<span className="px-3 py-1 text-sm font-bold text-green-300 bg-green-500/30 rounded-full">Complete</span>) : (<span className="px-3 py-1 text-sm font-bold text-yellow-300 bg-yellow-500/30 rounded-full animate-pulse">Pending</span>)}
-                                        </div>
-                                        <div className="flex justify-between items-center bg-gray-900/50 p-3 rounded-md">
-                                            <span className="font-semibold">Second Review</span>
-                                            {team.SecoundReview ? (<span className="px-3 py-1 text-sm font-bold text-green-300 bg-green-500/30 rounded-full">Complete</span>) : (<span className="px-3 py-1 text-sm font-bold text-yellow-300 bg-yellow-500/30 rounded-full animate-pulse">Pending</span>)}
-                                        </div>
-                                        <div className="flex justify-between items-center bg-gray-900/50 p-3 rounded-md">
-                                            <span className="font-semibold">Third Review only For Top 10</span>
-                                            
-                                        </div>
+                                                {member.qrCode && ( <button onClick={() => setViewingQr({ url: member.qrCode, name: member.name })} className="bg-white p-1 rounded-md hover:scale-110 transition-transform"> <img src={member.qrCode} alt="QR Code" className="w-12 h-12"/> </button> )}
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
-
-                                <div className="grid grid-cols-2 gap-3">
-                                    <button onClick={() => setIsAssistanceModalOpen(true)} className="p-4 bg-green-600/80 hover:bg-green-600 rounded-lg text-center font-bold">Request Help</button>
-                                    <button onClick={() => setIsAttendanceModalOpen(true)} className="p-4 bg-blue-600/80 hover:bg-blue-600 rounded-lg text-center font-bold">Attendance</button>
-                                </div>
-                                <button
-                                   onClick={() => setIsGameModalOpen(true)}
-                                   disabled={team.memoryGamePlayed || !isGameOpen}
-                                   className="w-full p-4 bg-indigo-600/80 hover:bg-indigo-600 rounded-lg text-center font-bold disabled:opacity-70 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-3 min-h-[72px]"
-                                >
-                                   {team.memoryGamePlayed ? ( <span className="text-lg">Game Score: {team.memoryGameScore}</span> ) : isGameOpen ? ( <span className="text-lg">Memory Flip Challenge</span> ) : (
-                                        <>
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                                            <span className="text-base">Game will unlock at {formatUnlockTime(gameOpenTime)}</span>
-                                        </>
-                                   )}
-                                </button>
-                                <button
-                                    onClick={() => setIsStopTheBarModalOpen(true)}
-                                    disabled={team.stopTheBarPlayed || !isBarGameOpen}
-                                    className="w-full p-4 bg-pink-600/80 hover:bg-pink-700 rounded-lg text-center font-bold disabled:opacity-70 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-3 min-h-[72px]"
-                                >
-                                    {team.stopTheBarPlayed ? (
-                                        <span className="text-lg">Timing Score: {team.stopTheBarScore}</span>
-                                    ) : isBarGameOpen ? (
-                                        <span className="text-lg">Flash Game Challenge</span>
-                                    ) : (
-                                        <>
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                                            <span className="text-base">Unlocks at {formatUnlockTime(barGameOpenTime)}</span>
-                                        </>
-                                    )}
-                                </button>
-                                <button
-                                    onClick={() => setIsNumberPuzzleModalOpen(true)}
-                                    disabled={team.numberPuzzlePlayed || !isPuzzleOpen}
-                                    className="w-full p-4 bg-teal-600/80 hover:bg-teal-700 rounded-lg text-center font-bold disabled:opacity-70 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-3 min-h-[72px]"
-                                    >
-                                    {team.numberPuzzlePlayed ? ( <span className="text-lg">Puzzle Score: {team.numberPuzzleScore}</span> ) : isPuzzleOpen ? ( <span className="text-lg">Number Puzzle Challenge</span> ) : (
-                                            <>
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                                                <span className="text-base">Puzzle will unlock at {formatUnlockTime(puzzleOpenTime)}</span>
-                                            </>
-                                    )}
-                                </button>
-                                {pptData && ( <a href={pptData.fileUrl} download className="block text-center p-4 bg-purple-600/80 hover:bg-purple-600 rounded-lg font-bold">Download "{pptData.fileName}"</a> )}
                             </div>
 
-                            <div className="lg:col-span-1 flex flex-col bg-black/20 rounded-lg border border-gray-700/50 p-5">
-                                <h2 className="text-xl font-bold font-naruto text-orange-400 border-b-2 border-orange-500/30 pb-2 mb-4">INTEL FEED</h2>
-                                <div className="space-y-4 overflow-y-auto pr-2 flex-grow">
-                                    {intelFeed.length > 0 ? intelFeed.map((item, index) => (
-                                        item.type === 'reminder' ? (
-                                            <div key={`rem-${index}`} className="flex gap-3 items-start p-3 bg-gray-800/50 rounded-lg">
-                                                <span className="mt-1 text-xl">📢</span>
-                                                <div className="flex-1"><p className="font-semibold text-yellow-400">Admin Reminder</p><p className="text-sm">{item.message}</p><p className="text-xs text-gray-500 mt-1 text-right">{item.timestamp.toLocaleTimeString()}</p></div>
-                                            </div>
-                                        ) : (
-                                            <div key={`iss-${index}`} className="flex gap-3 items-start p-3 bg-gray-800/50 rounded-lg">
-                                                <span className="mt-1 text-xl">🎫</span>
-                                                <div className="flex-1"><p className="font-semibold text-blue-400">Support Request Logged</p><p className="text-sm italic">"{item.text}"</p><div className="mt-1 flex justify-between items-center"><span className={`text-xs px-2 py-0.5 rounded-full ${item.status === 'Resolved' ? 'bg-green-500/30 text-green-300' : 'bg-yellow-500/30 text-yellow-300'}`}>{item.status}</span><p className="text-xs text-gray-500">{item.timestamp.toLocaleTimeString()}</p></div></div>
-                                            </div>
-                                        )
-                                    )) : <p className="text-center text-gray-400 mt-10">No new intel.</p>}
+                            {/* Right Column */}
+                            <div className="lg:col-span-1 flex flex-col gap-6">
+                               <AttendanceInfo rounds={attendanceRounds} currentTime={currentTime} onOpenModal={() => setIsAttendanceModalOpen(true)} />
+                                <div className="bg-black/20 rounded-lg border border-gray-700/50 p-5 flex flex-col flex-grow">
+                                    <h2 className="text-xl font-bold font-naruto text-orange-400 border-b-2 border-orange-500/30 pb-2">INTEL FEED</h2>
+                                    <div className="space-y-4 overflow-y-auto pr-2 flex-grow mt-4">
+                                        {intelFeed.length > 0 ? intelFeed.map((item, index) => (
+                                            item.type === 'reminder' ? (
+                                                <div key={`rem-${index}`} className="flex gap-3 items-start p-3 bg-gray-800/50 rounded-lg">
+                                                    <span className="mt-1 text-xl">📢</span>
+                                                    <div className="flex-1"><p className="font-semibold text-yellow-400">Admin Reminder</p><p className="text-sm">{item.message}</p><p className="text-xs text-gray-500 mt-1 text-right">{item.timestamp.toLocaleTimeString()}</p></div>
+                                                </div>
+                                            ) : (
+                                                <div key={`iss-${index}`} className="flex gap-3 items-start p-3 bg-gray-800/50 rounded-lg">
+                                                    <span className="mt-1 text-xl">🎫</span>
+                                                    <div className="flex-1"><p className="font-semibold text-blue-400">Support Request Logged</p><p className="text-sm italic">"{item.text}"</p><div className="mt-1 flex justify-between items-center"><span className={`text-xs px-2 py-0.5 rounded-full ${item.status === 'Resolved' ? 'bg-green-500/30 text-green-300' : 'bg-yellow-500/30 text-yellow-300'}`}>{item.status}</span><p className="text-xs text-gray-500">{item.timestamp.toLocaleTimeString()}</p></div></div>
+                                                </div>
+                                            )
+                                        )) : <p className="text-center text-gray-400 mt-10">No new intel.</p>}
+                                    </div>
+                                    <div className="mt-4">
+                                      <button onClick={() => setIsAssistanceModalOpen(true)} className="w-full p-4 bg-green-600/80 hover:bg-green-600 rounded-lg text-center font-bold">Request Help</button>
+                                    {pptData && ( <a href={pptData.fileUrl} download className="block text-center mt-3 p-4 bg-purple-600/80 hover:bg-purple-600 rounded-lg font-bold">Download "{pptData.fileName}"</a> )}
+                                    </div>
                                 </div>
                             </div>
                         </div>

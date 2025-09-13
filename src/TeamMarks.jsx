@@ -37,7 +37,7 @@ function TeamMarks() {
         async function fetchData() {
             try {
                 const response = await axios.get(`${api}/Hack/students`);
-                const sortedData = response.data.sort((a, b) => (b.FinalScore || 0) - (a.FinalScore || 0));
+                const sortedData = response.data.teams.sort((a, b) => (b.FinalScore || 0) - (a.FinalScore || 0));
                 setTeams(sortedData);
             } catch (error) {
                 console.error("Error fetching teams:", error);

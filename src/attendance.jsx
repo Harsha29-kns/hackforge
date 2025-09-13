@@ -177,7 +177,7 @@ function Attd() {
             setLoading(true);
             try {
                 let res = await axios.get(`${api}/Hack/students`);
-                setTeams(res.data);
+                setTeams(res.data.teams);
             } catch (error) {
                 console.error("Error fetching teams:", error);
                 setError("Failed to load team data.");

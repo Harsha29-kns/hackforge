@@ -17,7 +17,7 @@ const StatCard = ({ icon, title, value, color, unit = '' }) => (
     </div>
 );
 
-function AttdenceDetail() {
+function AttendanceDetail() {
     const [teams, setTeams] = useState([]);
     const [allTeamsForStats, setAllTeamsForStats] = useState([]); // New state to hold all teams for stats calculation
     const [loading, setLoading] = useState(true);
@@ -241,4 +241,4 @@ function AttdenceDetail() {
     );
 }
 
-export default AttdenceDetail;
+export default AttendanceDetail;
