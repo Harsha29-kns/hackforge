@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react"; // NEW: Added useMemo
 import axios from "axios";
 import api from "./api";
 import { io } from "socket.io-client";
@@ -11,7 +11,7 @@ import { Gem, ArrowLeft, ArrowRight } from "lucide-react";
 
 const socket = io(api);
 
-// --- HELPER COMPONENTS ---
+// --- HELPER COMPONENTS (No changes needed here) ---
 const Notification = ({ message, type, onClear }) => {
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -60,8 +60,10 @@ const StatCard = ({ title, value, color }) => (
 
 const DomainMonitor = ({ teams, domains, onResetDomains }) => {
     const [isLoading, setIsLoading] = useState(false);
-    const teamsWithDomain = teams.filter(team => team.Domain);
-    const unassignedVerifiedTeams = teams.filter(team => !team.Domain && team.verified);
+    
+    // UPDATED: Use useMemo for derived data to avoid re-calculating on every render
+    const teamsWithDomain = useMemo(() => teams.filter(team => team.Domain), [teams]);
+    const unassignedVerifiedTeams = useMemo(() => teams.filter(team => !team.Domain && team.verified), [teams]);
 
     const handleResetClick = async () => {
         if (window.confirm("Are you sure you want to reset ALL domain selections? This action cannot be undone.")) {
@@ -146,14 +148,16 @@ const DomainMonitor = ({ teams, domains, onResetDomains }) => {
     );
 };
 
+
 function Admin() {
     // --- STATE AND LOGIC ---
     const [isAuthenticated, setIsAuthenticated] = useState(sessionStorage.getItem("adminAuthenticated") === "true");
     const [passwordInput, setPasswordInput] = useState("");
     const [loginError, setLoginError] = useState("");
     const [notification, setNotification] = useState({ message: '', type: '' });
-    const [teams, setTeams] = useState([]);
-    const [allTeams, setAllTeams] = useState([]); // For stats and exports
+
+    // UPDATED: Removed `teams` state. `allTeams` is now the single source of truth.
+    const [allTeams, setAllTeams] = useState([]); 
     const [loading, setLoading] = useState(true);
     const [showVerificationModal, setShowVerificationModal] = useState(false);
     const [verificationTab, setVerificationTab] = useState('pending');
@@ -161,7 +165,6 @@ function Admin() {
     const [showAttdModal, setShowAttdModal] = useState(false);
     const [selectedAttdRound, setSelectedAttdRound] = useState(null);
     const navigate = useNavigate();
-    const [showDomainModal, setShowDomainModal] = useState(false);
     const [allDomains, setAllDomains] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [showSupportModal, setShowSupportModal] = useState(false);
@@ -173,7 +176,6 @@ function Admin() {
     const [showCredentialModal, setShowCredentialModal] = useState(false);
     const [selectedTeamForPass, setSelectedTeamForPass] = useState("");
     const [isGeneratingPass, setIsGeneratingPass] = useState(false);
-    const passContainerRef = useRef(null);
     const [verificationSearchTerm, setVerificationSearchTerm] = useState("");
     const [pptTemplate, setPptTemplate] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
@@ -187,7 +189,12 @@ function Admin() {
     const [internalScoreInput, setInternalScoreInput] = useState("");
     const [isSubmittingScore, setIsSubmittingScore] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1);
+    
+    // NEW: State to hold the single team being rendered for PDF generation
+    const [teamForPdf, setTeamForPdf] = useState(null);
+    
+    // NEW: Define a constant for pagination
+    const ITEMS_PER_PAGE = 20;
 
     const handleInternalScoreSubmit = async (e) => {
         e.preventDefault();
@@ -195,14 +202,12 @@ function Admin() {
             setNotification({ message: 'Please select a team and enter a score.', type: 'error' });
             return;
         }
-
         setIsSubmittingScore(true);
         const score = parseInt(internalScoreInput, 10);
-
         try {
             await axios.post(`${api}/Hack/team/${selectedTeamScoring}/internal-score`, { score });
             setNotification({ message: 'Score submitted successfully!', type: 'success' });
-            fetchData(currentPage); // Refetch current page
+            fetchData(); // Refetch all data
             setSelectedTeamScoring("");
             setInternalScoreInput("");
         } catch (error) {
@@ -217,9 +222,7 @@ function Admin() {
         try {
             await axios.post(`${api}/Hack/admin/reset-domains`);
             setNotification({ message: 'All domains have been reset!', type: 'success' });
-            fetchData(1); // Go back to first page
-            const domainsRes = await axios.get(`${api}/domains`);
-            setAllDomains(domainsRes.data);
+            fetchData(); // Refetch all data
         } catch (error) {
             setNotification({ message: 'Failed to reset domains.', type: 'error' });
         }
@@ -229,13 +232,12 @@ function Admin() {
     const handleLogout = () => { sessionStorage.removeItem("adminAuthenticated"); setIsAuthenticated(false); setPasswordInput(""); };
     const handleSendPPT = async () => { if (!pptTemplate) { setUploadError("Please select a file."); return; } setIsUploading(true); setUploadError(""); try { const formData = new FormData(); formData.append("file", pptTemplate); formData.append("upload_preset", "ppt_templet"); const response = await axios.post("https://api.cloudinary.com/v1_1/dsvwojzli/raw/upload", formData); socket.emit('admin:sendPPT', { fileUrl: response.data.secure_url, fileName: pptTemplate.name }); setPptTemplate(null); document.getElementById('ppt-input').value = null; setNotification({ message: 'PPT Sent!', type: 'success' }); } catch (error) { setUploadError("Upload failed."); setNotification({ message: 'PPT Upload Failed!', type: 'error' }); } finally { setIsUploading(false); } };
     
+    // UPDATED: No longer needs to fetch. Uses `allTeams` state directly.
     const handleExportMembers = async () => {
         setNotification({ message: 'Preparing full report...', type: 'success' });
         try {
-            const allTeamsRes = await axios.get(`${api}/Hack/students`);
-            const allTeamsData = allTeamsRes.data.teams;
             const flatData = [];
-            allTeamsData.forEach(team => {
+            allTeams.forEach(team => {
                 flatData.push({ "Team Name": team.teamname, "Payment Status": team.verified ? "Yes" : "No", "Member Name": team.name, "Role": "Lead", "Registration Number": team.registrationNumber, "Year": team.year, "Department": team.department, "Email": team.email, "Phone": team.phone, "Transaction ID": team.transtationId, "Payment Image URL": team.imgUrl, });
                 team.teamMembers.forEach(member => {
                     flatData.push({ "Team Name": team.teamname, "Payment Status": team.verified ? "Yes" : "No", "Member Name": member.name, "Role": "Member", "Registration Number": member.registrationNumber, "Year": member.year, "Department": member.department, "Email": member.email, "Phone": member.phone, });
@@ -258,49 +260,120 @@ function Admin() {
     const handleOpenSupportModal = () => { setShowSupportModal(true); fetchIssues(); };
     const handleResolveIssue = async (teamId, issueId) => { const originalIssues = [...teamsWithIssues]; setTeamsWithIssues(prevTeams => prevTeams.map(team => team._id === teamId ? { ...team, issues: team.issues.filter(issue => issue._id !== issueId) } : team).filter(team => team.issues.length > 0)); try { await axios.post(`${api}/Hack/issue/resolve/${teamId}/${issueId}`); setNotification({ message: 'Issue Resolved!', type: 'success' }); } catch (error) { setTeamsWithIssues(originalIssues); setNotification({ message: 'Failed to Resolve Issue!', type: 'error' }); } };
     const handleSendReminder = () => { if (!reminderText.trim()) { setReminderError("Cannot be empty."); return; } setIsSendingReminder(true); setReminderError(""); socket.emit('admin:sendReminder', { message: reminderText.trim() }); setNotification({ message: 'Reminder Sent!', type: 'success' }); setTimeout(() => { setIsSendingReminder(false); setReminderText(""); }, 1000); };
-    const handleVerifyTeam = async (teamId) => { setVerifyingTeamId(teamId); try { await axios.post(`${api}/Hack/verify/${teamId}`); setTeams(prev => prev.map(t => t._id === teamId ? { ...t, verified: true } : t)); setAllTeams(prev => prev.map(t => t._id === teamId ? { ...t, verified: true } : t)); setNotification({ message: 'Team Verified!', type: 'success' }); } catch (error) { setNotification({ message: 'Verification Failed!', type: 'error' }); } finally { setVerifyingTeamId(null); } };
-    const handleDomainChange = async (teamId, newDomain) => { const originalTeams = [...teams]; setTeams(prev => prev.map(t => t._id === teamId ? { ...t, Domain: newDomain } : t)); try { await axios.post(`${api}/Hack/updateDomain`, { teamId, domain: newDomain }); setNotification({ message: 'Domain Updated!', type: 'success' }); } catch (error) { setTeams(originalTeams); setNotification({ message: 'Failed to Update Domain!', type: 'error' }); } };
-    const toggleTeamDetails = (teamId) => { setExpandedTeam(expandedTeam === teamId ? null : teamId); };
-    const handleDownloadPass = async () => { if (!selectedTeamForPass) { alert("Please select a team."); return; } const team = allTeams.find(t => t._id === selectedTeamForPass); if (!team) { alert("Selected team not found."); return; } setIsGeneratingPass(true); const passElement = document.getElementById(`credential-pass-${team._id}`); if (!passElement) { setIsGeneratingPass(false); return; } try { const canvas = await html2canvas(passElement, { scale: 2, }); const imgData = canvas.toDataURL('image/png'); const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [canvas.width, canvas.height] }); pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height); pdf.save(`${team.teamname}_Credentials.pdf`); setNotification({ message: 'Credentials Exported!', type: 'success' }); } catch (error) { setNotification({ message: 'Export Failed!', type: 'error' }); } finally { setIsGeneratingPass(false); } };
     
+    // UPDATED: Now only updates the master `allTeams` list.
+    const handleVerifyTeam = async (teamId) => { 
+        setVerifyingTeamId(teamId); 
+        try { 
+            await axios.post(`${api}/Hack/verify/${teamId}`); 
+            setAllTeams(prev => prev.map(t => t._id === teamId ? { ...t, verified: true } : t)); 
+            setNotification({ message: 'Team Verified!', type: 'success' }); 
+        } catch (error) { 
+            setNotification({ message: 'Verification Failed!', type: 'error' }); 
+        } finally { 
+            setVerifyingTeamId(null); 
+        } 
+    };
+    
+    // UPDATED: Now only updates the master `allTeams` list.
+    const handleDomainChange = async (teamId, newDomain) => {
+        const originalTeams = [...allTeams];
+        setAllTeams(prev => prev.map(t => t._id === teamId ? { ...t, Domain: newDomain } : t));
+        try {
+            await axios.post(`${api}/Hack/updateDomain`, { teamId, domain: newDomain });
+            setNotification({ message: 'Domain Updated!', type: 'success' });
+        } catch (error) {
+            setAllTeams(originalTeams);
+            setNotification({ message: 'Failed to Update Domain!', type: 'error' });
+        }
+    };
+
+    const toggleTeamDetails = (teamId) => { setExpandedTeam(expandedTeam === teamId ? null : teamId); };
+    
+    // UPDATED: This function now just sets the state to trigger the PDF generation effect.
+    const handleDownloadPass = async () => {
+        if (!selectedTeamForPass) {
+            alert("Please select a team.");
+            return;
+        }
+        const team = allTeams.find(t => t._id === selectedTeamForPass);
+        if (!team) {
+            alert("Selected team not found.");
+            return;
+        }
+        setIsGeneratingPass(true);
+        setTeamForPdf(team); // This will trigger the useEffect for PDF generation
+    };
+    
+    // NEW: This effect handles the actual PDF generation for a single pass.
+    useEffect(() => {
+        if (!teamForPdf || !isGeneratingPass) return;
+
+        const generatePdf = async () => {
+            const passElement = document.getElementById(`credential-pass-${teamForPdf._id}`);
+            if (!passElement) {
+                console.error("Pass element not found in DOM for PDF generation.");
+                setIsGeneratingPass(false);
+                setTeamForPdf(null);
+                return;
+            }
+            try {
+                const canvas = await html2canvas(passElement, { scale: 2 });
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [canvas.width, canvas.height] });
+                pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+                pdf.save(`${teamForPdf.teamname}_Credentials.pdf`);
+                setNotification({ message: 'Credentials Exported!', type: 'success' });
+            } catch (error) {
+                setNotification({ message: 'Export Failed!', type: 'error' });
+            } finally {
+                setIsGeneratingPass(false);
+                setTeamForPdf(null); // Clean up the state after generation
+            }
+        };
+
+        // Use a short timeout to ensure React has rendered the component before we try to capture it.
+        const timer = setTimeout(generatePdf, 100);
+        return () => clearTimeout(timer);
+
+    }, [teamForPdf, isGeneratingPass]); // Effect runs when a team is set for PDF generation
+    
+    // UPDATED: Rewritten for efficiency. It now generates PDFs one by one.
     const handleDownloadAllPasses = async () => {
         setIsZipping(true);
-        setZipProgress({ current: 0, total: 0 });
         try {
-            const allTeamsRes = await axios.get(`${api}/Hack/students`);
-            const allTeamsData = allTeamsRes.data.teams;
             const zip = new JSZip();
-            const verifiedTeams = allTeamsData.filter(t => t.verified);
+            const verifiedTeams = allTeams.filter(t => t.verified);
 
             if (verifiedTeams.length === 0) {
                 setNotification({ message: 'No verified teams to export!', type: 'error' });
-                setIsZipping(false);
                 return;
             }
             
             setZipProgress({ current: 0, total: verifiedTeams.length });
             
-            // This relies on having all teams rendered, so we use the `allTeams` state.
-            // Temporarily set the state for rendering, then generate PDFs.
-            const currentlyRenderedTeams = teams;
-            setTeams(verifiedTeams); // Render all verified teams for html2canvas
-            
-            await new Promise(resolve => setTimeout(resolve, 500)); // Wait for render
-
             for (let i = 0; i < verifiedTeams.length; i++) {
                 const team = verifiedTeams[i];
                 setZipProgress({ current: i + 1, total: verifiedTeams.length });
+
+                // Render the team pass temporarily
+                setTeamForPdf(team);
+                await new Promise(resolve => setTimeout(resolve, 50)); // Wait for render
+
                 const passElement = document.getElementById(`credential-pass-${team._id}`);
                 if (!passElement) continue;
+
                 const canvas = await html2canvas(passElement, { scale: 2 });
-                const imgData = canvas.toDataURL('image/png');
                 const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [canvas.width, canvas.height] });
-                pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+                pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, canvas.width, canvas.height);
                 const pdfBlob = pdf.output('blob');
+                
                 const safeFileName = team.teamname.replace(/[/\\?%*:|"<>]/g, '-') || 'Unnamed Team';
                 zip.file(`${safeFileName}_Credentials.pdf`, pdfBlob);
             }
             
+            setTeamForPdf(null); // Clean up after loop
+
             const zipBlob = await zip.generateAsync({ type: "blob" });
             const link = document.createElement("a");
             link.href = URL.createObjectURL(zipBlob);
@@ -309,48 +382,48 @@ function Admin() {
             link.click();
             document.body.removeChild(link);
             setNotification({ message: 'All credentials zipped!', type: 'success' });
-            
-            setTeams(currentlyRenderedTeams); // Revert to paginated view
-
         } catch (error) {
+            console.error("ZIP export failed:", error);
             setNotification({ message: 'ZIP export failed!', type: 'error' });
         } finally {
             setIsZipping(false);
             setZipProgress({ current: 0, total: 0 });
+            setTeamForPdf(null);
         }
     };
 
-    const fetchData = async (page = 1) => {
+    // UPDATED: Simplified to fetch all data at once.
+    const fetchData = async () => {
         try {
-            const [pagedTeamsRes, allTeamsRes, domainsRes, issuesRes] = await Promise.all([
-                axios.get(`${api}/Hack/students?page=${page}&limit=20`),
-                axios.get(`${api}/Hack/students`), // For stats and exports
+            const [allTeamsRes, domainsRes, issuesRes] = await Promise.all([
+                axios.get(`${api}/Hack/students`),
                 axios.get(`${api}/domains`),
                 axios.get(`${api}/Hack/issues`)
             ]);
-            setTeams(pagedTeamsRes.data.teams);
-            setTotalPages(pagedTeamsRes.data.totalPages);
-            setCurrentPage(pagedTeamsRes.data.currentPage);
+            
             setAllTeams(allTeamsRes.data.teams);
             setAllDomains(domainsRes.data);
+            
             const pendingIssuesTeams = issuesRes.data.map(team => ({...team, issues: team.issues.filter(issue => issue.status === 'Pending')})).filter(team => team.issues.length > 0);
             setTeamsWithIssues(pendingIssuesTeams);
+
         } catch (error) {
             console.error("Error fetching data:", error);
+            setNotification({ message: 'Failed to load data.', type: 'error' });
         }
     };
 
+    // UPDATED: Main effect now only runs once on auth change and fetches all data.
     useEffect(() => {
         if (!isAuthenticated) {
             setLoading(false);
             return;
         }
-
         setLoading(true);
-        fetchData(currentPage).finally(() => setLoading(false));
+        fetchData().finally(() => setLoading(false));
 
         const handleActiveSessionsUpdate = (data) => setActiveSessionsCount(data.count);
-        const handleDomainsUpdate = () => fetchData(currentPage);
+        const handleDomainsUpdate = () => fetchData(); // Refetches all data on update
 
         socket.on('admin:activeSessionsUpdate', handleActiveSessionsUpdate);
         socket.on('domains:updated', handleDomainsUpdate);
@@ -360,12 +433,32 @@ function Admin() {
             socket.off('admin:activeSessionsUpdate', handleActiveSessionsUpdate);
             socket.off('domains:updated', handleDomainsUpdate);
         };
-    }, [isAuthenticated, currentPage]);
+    }, [isAuthenticated]);
 
-    const verifiedCount = allTeams.filter(t => t.verified).length;
-    const notVerifiedCount = allTeams.length - verifiedCount;
-    const pendingIssuesCount = teamsWithIssues.reduce((count, team) => count + team.issues.length, 0);
-    const verificationFilteredTeams = allTeams.filter(t => verificationTab === 'pending' ? !t.verified : t.verified).filter(team => team.teamname.toLowerCase().includes(verificationSearchTerm.toLowerCase()) || team.email.toLowerCase().includes(verificationSearchTerm.toLowerCase()));
+
+    // NEW: Use useMemo to calculate derived data efficiently.
+    const verifiedCount = useMemo(() => allTeams.filter(t => t.verified).length, [allTeams]);
+    const notVerifiedCount = useMemo(() => allTeams.length - verifiedCount, [allTeams, verifiedCount]);
+    const pendingIssuesCount = useMemo(() => teamsWithIssues.reduce((count, team) => count + team.issues.length, 0), [teamsWithIssues]);
+
+    const verificationFilteredTeams = useMemo(() => {
+        return allTeams
+            .filter(t => (verificationTab === 'pending' ? !t.verified : t.verified))
+            .filter(team => 
+                team.teamname.toLowerCase().includes(verificationSearchTerm.toLowerCase()) || 
+                team.email.toLowerCase().includes(verificationSearchTerm.toLowerCase())
+            );
+    }, [allTeams, verificationTab, verificationSearchTerm]);
+
+    // NEW: Calculate pagination values from the master `allTeams` list.
+    const totalPages = Math.ceil(allTeams.length / ITEMS_PER_PAGE);
+    const paginatedTeams = useMemo(() => {
+        return allTeams.slice(
+            (currentPage - 1) * ITEMS_PER_PAGE,
+            currentPage * ITEMS_PER_PAGE
+        );
+    }, [allTeams, currentPage]);
+
 
     if (!isAuthenticated) {
         return ( <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundImage: `url('https://images6.alphacoders.com/605/605598.jpg')`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}> <div className="absolute inset-0 bg-black/80 backdrop-blur-sm"></div> <div className="relative z-10 w-full max-w-md"> <form onSubmit={handleLogin} className="bg-gray-900/50 backdrop-blur-lg border border-orange-500/30 rounded-2xl shadow-2xl p-8 space-y-6"> <div className="text-center"> <h1 className="text-4xl font-naruto text-orange-500 drop-shadow-lg">Hokage's Office</h1> <p className="text-gray-400 mt-2">Admin Seal Verification Required</p> </div> <div> <label className="text-sm font-bold text-orange-400 mb-2 block" htmlFor="password">Secret Jutsu (Password)</label> <input id="password" type="password" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} placeholder="************" className="w-full bg-gray-800 border-2 border-gray-700 text-white rounded-lg px-4 py-3 focus:outline-none focus:border-orange-500 transition-colors"/> </div> {loginError && <p className="text-red-400 text-center text-sm">{loginError}</p>} <button type="submit" className="w-full bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:scale-105 transition-transform text-lg">Verify Seal</button> </form> </div> </div> );
@@ -406,36 +499,37 @@ function Admin() {
                                 <h2 className="text-4xl font-naruto text-orange-400 mb-6">Team Management</h2>
                                 <input type="text" placeholder="Search for a team on this page..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full p-3 mb-6 bg-gray-800/50 rounded-lg border-2 border-gray-700 focus:outline-none focus:border-orange-500"/>
                                 <div className="space-y-3 max-h-[calc(100vh-320px)] overflow-y-auto pr-2">
-                                    {teams.filter(team => team.teamname.toLowerCase().includes(searchTerm.toLowerCase())).map(team => {
+                                    {/* UPDATED: Map over the calculated `paginatedTeams` */}
+                                    {paginatedTeams.filter(team => team.teamname.toLowerCase().includes(searchTerm.toLowerCase())).map(team => {
                                         const totalGameScore = (team.memoryGameScore || 0) + (team.numberPuzzleScore || 0) + (team.internalGameScore || 0);
                                         return (
                                          <div key={team._id} className="bg-gray-800/60 rounded-lg p-4">
-                                            <div className="flex justify-between items-center">
-                                                <div className="flex-1">
-                                                    <p className="font-bold text-lg">{team.teamname}</p>
-                                                    <div className="flex items-center gap-3 text-sm mt-1">
-                                                        <span className={`font-semibold ${team.verified ? 'text-green-400' : 'text-red-400'}`}>{team.verified ? 'Verified' : 'Not Verified'}</span>
-                                                        <span className="text-gray-600">|</span>
-                                                        <span className="text-gray-300">Total Game Score: <strong className="text-white">{totalGameScore}</strong></span>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center gap-4">
-                                                    <select value={team.Domain || ''} onChange={(e) => handleDomainChange(team._id, e.target.value)} className="w-48 p-2 bg-gray-700 text-white rounded-md border border-gray-600">
-                                                        <option value="">-- No Domain --</option>
-                                                        {allDomains.map(d => (<option key={d.id} value={d.name}>{d.name}</option>))}
-                                                    </select>
-                                                    <button onClick={() => toggleTeamDetails(team._id)} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded">{expandedTeam === team._id ? 'Collapse' : 'Details'}</button>
-                                                </div>
-                                            </div>
-                                             {expandedTeam === team._id && (
-                                                <div className="mt-4 pt-4 border-t border-gray-700 text-sm space-y-1">
-                                                    <p><strong className="text-orange-400 w-24 inline-block">Lead:</strong> {team.name} ({team.registrationNumber})</p>
-                                                    <p><strong className="text-orange-400 w-24 inline-block">Members:</strong> {team.teamMembers.map(m => m.name).join(', ')}</p>
-                                                    <p><strong className="text-orange-400 w-24 inline-block">Memory Game:</strong> {team.memoryGameScore ?? 'Not Played'}</p>
-                                                    <p><strong className="text-orange-400 w-24 inline-block">Number Puzzle:</strong> {team.numberPuzzleScore ?? 'Not Played'}</p>
-                                                    <p><strong className="text-orange-400 w-24 inline-block">Internal Game:</strong> {team.internalGameScore ?? 'N/A'}</p>
-                                                </div>
-                                             )}
+                                             <div className="flex justify-between items-center">
+                                                 <div className="flex-1">
+                                                     <p className="font-bold text-lg">{team.teamname}</p>
+                                                     <div className="flex items-center gap-3 text-sm mt-1">
+                                                         <span className={`font-semibold ${team.verified ? 'text-green-400' : 'text-red-400'}`}>{team.verified ? 'Verified' : 'Not Verified'}</span>
+                                                         <span className="text-gray-600">|</span>
+                                                         <span className="text-gray-300">Total Game Score: <strong className="text-white">{totalGameScore}</strong></span>
+                                                     </div>
+                                                 </div>
+                                                 <div className="flex items-center gap-4">
+                                                     <select value={team.Domain || ''} onChange={(e) => handleDomainChange(team._id, e.target.value)} className="w-48 p-2 bg-gray-700 text-white rounded-md border border-gray-600">
+                                                         <option value="">-- No Domain --</option>
+                                                         {allDomains.map(d => (<option key={d.id} value={d.name}>{d.name}</option>))}
+                                                     </select>
+                                                     <button onClick={() => toggleTeamDetails(team._id)} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded">{expandedTeam === team._id ? 'Collapse' : 'Details'}</button>
+                                                 </div>
+                                             </div>
+                                              {expandedTeam === team._id && (
+                                                 <div className="mt-4 pt-4 border-t border-gray-700 text-sm space-y-1">
+                                                     <p><strong className="text-orange-400 w-24 inline-block">Lead:</strong> {team.name} ({team.registrationNumber})</p>
+                                                     <p><strong className="text-orange-400 w-24 inline-block">Members:</strong> {team.teamMembers.map(m => m.name).join(', ')}</p>
+                                                     <p><strong className="text-orange-400 w-24 inline-block">Memory Game:</strong> {team.memoryGameScore ?? 'Not Played'}</p>
+                                                     <p><strong className="text-orange-400 w-24 inline-block">Number Puzzle:</strong> {team.numberPuzzleScore ?? 'Not Played'}</p>
+                                                     <p><strong className="text-orange-400 w-24 inline-block">Internal Game:</strong> {team.internalGameScore ?? 'N/A'}</p>
+                                                 </div>
+                                              )}
                                           </div>
                                         )
                                     })}
@@ -449,6 +543,7 @@ function Admin() {
                                         <ArrowLeft size={16} /> Previous
                                     </button>
                                     <span className="font-semibold text-gray-300">
+                                        {/* UPDATED: Use the calculated `totalPages` */}
                                         Page {currentPage} of {totalPages}
                                     </span>
                                     <button
@@ -461,13 +556,14 @@ function Admin() {
                                 </div>
                             </div>
                         )}
+                        {/* --- Other Views (scoring, domains, etc.) --- */}
                         {activeView === 'scoring' && (
                              <div>
                                  <h2 className="text-4xl font-naruto text-orange-400 mb-6">Manual Score Entry</h2>
                                  <div className="bg-gray-800/60 p-6 rounded-lg border border-cyan-500/30 max-w-lg mx-auto">
                                      <h3 className="text-2xl font-naruto text-cyan-400 mb-4 flex items-center gap-3">
-                                        <Gem />
-                                        Add Internal Game Score
+                                         <Gem />
+                                         Add Internal Game Score
                                      </h3>
                                      <form onSubmit={handleInternalScoreSubmit} className="space-y-4">
                                          <div>
@@ -504,7 +600,7 @@ function Admin() {
                                          </button>
                                      </form>
                                  </div>
-                              </div>
+                               </div>
                         )}
                         {activeView === 'domains' && (
                             <DomainMonitor
@@ -563,65 +659,39 @@ function Admin() {
             {showAttdModal && ( <div className="fixed inset-0 bg-black/80 flex justify-center items-center z-50 p-4"> <div className="bg-gray-900 border-2 border-orange-500/50 rounded-xl shadow-lg p-6 w-full max-w-sm flex flex-col"> <h2 className="text-xl font-bold text-orange-400 mb-4">Select Attendance Round</h2> <div className="flex flex-col gap-3"> {["First", "Second", "Third", "Fourth","Fifth", "Sixth", "Seventh"].map((round, idx) => ( <button key={round} className={`px-4 py-2 rounded-lg font-semibold transition ${selectedAttdRound === idx + 1 ? "bg-orange-700 text-white" : "bg-gray-700 text-gray-300 hover:bg-orange-600 hover:text-white"}`} onClick={() => { setSelectedAttdRound(idx + 1); setShowAttdModal(false); navigate(`/qratt?round=${idx + 1}`); }} >{round} Attendance</button> ))} </div> <button className="mt-6 px-4 py-2 bg-gray-600 text-white rounded-lg" onClick={() => setShowAttdModal(false)}>Cancel</button> </div> </div> )}
             {showCredentialModal && ( <div className="fixed inset-0 bg-black/80 flex justify-center items-center z-50 p-4"> <div className="bg-gray-900 border-2 border-cyan-500/50 rounded-xl shadow-lg p-6 w-full max-w-lg flex flex-col"> <div className="flex justify-between items-center mb-6"> <h2 className="text-2xl text-cyan-400 font-naruto">Export Team Credentials</h2> <button className="text-gray-400 hover:text-white text-3xl" onClick={() => setShowCredentialModal(false)}>&times;</button> </div> <div className="space-y-4 border-b border-gray-700 pb-6 mb-6"> <p className="text-gray-300 text-center font-semibold">Download a Single Team Pass</p> <div className="flex flex-col sm:flex-row gap-4"> <select value={selectedTeamForPass} onChange={(e) => setSelectedTeamForPass(e.target.value)} className="flex-grow p-3 bg-gray-800 text-white rounded-md border border-gray-700 focus:outline-none focus:border-cyan-500"> <option value="">-- Select a Verified Team --</option> {allTeams.filter(t => t.verified).map(team => ( <option key={team._id} value={team._id}>{team.teamname}</option> ))} </select> <button onClick={handleDownloadPass} disabled={!selectedTeamForPass || isGeneratingPass} className="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"> {isGeneratingPass ? (<><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />Generating...</>) : 'Download Pass (PDF)'} </button> </div> </div> <div className="space-y-4 text-center"> <p className="text-gray-300 font-semibold">Download All Verified Team Passes</p> <p className="text-sm text-gray-500">This will generate a PDF for every verified team and download them in a single .zip file.</p> <button onClick={handleDownloadAllPasses} disabled={isZipping} className="w-full bg-gradient-to-r from-purple-600 to-indigo-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"> {isZipping ? ( <> <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> Zipping... ({zipProgress.current} / {zipProgress.total}) </> ) : ( 'Download All as ZIP' )} </button> </div> </div> </div> )}
 
-            <div ref={passContainerRef} style={{ position: 'absolute', left: '-9999px', top: 0, zIndex: -10 }}>
-                {allTeams.filter(t => t.verified).map(team => (
+            {/* UPDATED: This section is now highly efficient. It only renders ONE team pass when needed for PDF generation. */}
+            <div style={{ position: 'absolute', left: '-9999px', top: 0, zIndex: -10 }}>
+                {teamForPdf && (
                     <div
-                        key={`pass-${team._id}`}
-                        id={`credential-pass-${team._id}`}
+                        id={`credential-pass-${teamForPdf._id}`}
                         style={{
-                            width: '620px',
-                            minHeight: '877px',
-                            padding: '2rem',
-                            backgroundColor: '#f5f5f5',
-                            color: '#1a202c',
-                            fontFamily: 'sans-serif',
-                            position: 'relative',
-                            overflow: 'hidden',
+                            width: '620px', minHeight: '877px', padding: '2rem',
+                            backgroundColor: '#f5f5f5', color: '#1a202c', fontFamily: 'sans-serif',
+                            position: 'relative', overflow: 'hidden',
                         }}
                     >
-                        <div style={{
-                            position: 'absolute',
-                            top: '-50px',
-                            left: '-50px',
-                            width: '200px',
-                            height: '200px',
-                            backgroundColor: '#3b82f6',
-                            borderRadius: '50%',
-                            opacity: '0.1',
-                        }} />
-                        <div style={{
-                            position: 'absolute',
-                            bottom: '-50px',
-                            right: '-50px',
-                            width: '250px',
-                            height: '250px',
-                            backgroundColor: '#3b82f6',
-                            borderRadius: '50%',
-                            opacity: '0.05',
-                        }} />
-
+                        {/* Pass template content using `teamForPdf` */}
+                        <div style={{ position: 'absolute', top: '-50px', left: '-50px', width: '200px', height: '200px', backgroundColor: '#3b82f6', borderRadius: '50%', opacity: '0.1' }} />
+                        <div style={{ position: 'absolute', bottom: '-50px', right: '-50px', width: '250px', height: '250px', backgroundColor: '#3b82f6', borderRadius: '50%', opacity: '0.05' }} />
                         <div style={{ textAlign: 'center', borderBottom: '2px solid #cbd5e0', paddingBottom: '1.5rem', marginBottom: '2rem' }}>
                             <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#1a202c' }}>EVENT CREDENTIALS</h1>
                             <h2 style={{ fontSize: '1.8rem', fontWeight: 'normal', color: '#4a5568', marginTop: '0.5rem' }}>HACKFORGE 2025</h2>
                             <h3 style={{ fontSize: '1.5rem', fontWeight: 'normal', color: '#4a5568', marginTop: '0.5rem'}}>DONT SHARE THIS PASSWOARDS WITH ANYONE!</h3>
                         </div>
-
                         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                            <p style={{ fontSize: '1.5rem', fontWeight: 'semibold', color: '#2d3748', marginBottom: '0.5rem' }}>Team: <span style={{ fontWeight: 'bold', color: '#3b82f6' }}>{team.teamname}</span></p>
-                            <p style={{ fontSize: '1.125rem', color: '#f82121ff' }}>Sector: {team.Sector || 'N/A'}</p>
+                            <p style={{ fontSize: '1.5rem', fontWeight: 'semibold', color: '#2d3748', marginBottom: '0.5rem' }}>Team: <span style={{ fontWeight: 'bold', color: '#3b82f6' }}>{teamForPdf.teamname}</span></p>
+                            <p style={{ fontSize: '1.125rem', color: '#f82121ff' }}>Sector: {teamForPdf.Sector || 'N/A'}</p>
                         </div>
-
                         <div style={{ backgroundColor: '#e2e8f0', border: '1px solid #a0aec0', borderRadius: '1rem', textAlign: 'center', padding: '1.5rem', margin: '2rem 0', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
                             <p style={{ color: '#4a5568', textTransform: 'uppercase', letterSpacing: '0.1em', fontSize: '0.9rem', marginBottom: '0.5rem' }}>Team Secret Code / Password</p>
                             <p style={{ fontSize: '2.5rem', fontFamily: 'monospace', fontWeight: 'bold', color: '#3b82f6', letterSpacing: '0.1em' }}>
-                                {team.password || 'N/A'}
+                                {teamForPdf.password || 'N/A'}
                             </p>
                         </div>
-
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginTop: '2rem' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', backgroundColor: '#ffffff', padding: '1.5rem', borderRadius: '1rem', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                                {team.lead?.qrCode && team.lead.qrCode.startsWith('data:image') ? (
-                                    <img src={team.lead.qrCode} alt={`QR Code for ${team.name}`} style={{ width: '8rem', height: '8rem', borderRadius: '0.5rem', border: '2px solid #e2e8f0', padding: '0.25rem' }}/>
+                                {teamForPdf.lead?.qrCode && teamForPdf.lead.qrCode.startsWith('data:image') ? (
+                                    <img src={teamForPdf.lead.qrCode} alt={`QR Code for ${teamForPdf.name}`} style={{ width: '8rem', height: '8rem', borderRadius: '0.5rem', border: '2px solid #e2e8f0', padding: '0.25rem' }}/>
                                 ) : (
                                     <div style={{ width: '8rem', height: '8rem', borderRadius: '0.5rem', backgroundColor: '#f0f4f8', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', fontSize: '0.8rem', color: '#cbd5e0', padding: '0.5rem', border: '2px solid #e2e8f0' }}>
                                         QR Code Data Invalid
@@ -629,13 +699,13 @@ function Admin() {
                                 )}
                                 <div>
                                     <p style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
-                                        {team.name}
+                                        {teamForPdf.name}
                                         <span style={{ fontSize: '0.8rem', backgroundColor: '#3b82f6', color: 'white', padding: '0.25rem 0.75rem', borderRadius: '9999px', marginLeft: '0.5rem', verticalAlign: 'middle' }}>LEADER</span>
                                     </p>
-                                    <p style={{ color: '#4a5568' }}>Reg No: {team.registrationNumber}</p>
+                                    <p style={{ color: '#4a5568' }}>Reg No: {teamForPdf.registrationNumber}</p>
                                 </div>
                             </div>
-                            {team.teamMembers.map((member, index) => (
+                            {teamForPdf.teamMembers.map((member, index) => (
                                 <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', backgroundColor: '#ffffff', padding: '1.5rem', borderRadius: '1rem', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
                                     {member.qrCode && member.qrCode.startsWith('data:image') ? (
                                         <img src={member.qrCode} alt={`QR Code for ${member.name}`} style={{ width: '8rem', height: '8rem', borderRadius: '0.5rem', border: '2px solid #e2e8f0', padding: '0.25rem' }}/>
@@ -657,7 +727,7 @@ function Admin() {
                             <p>&copy; 2025 Scorecraft KARE</p>
                         </div>
                     </div>
-                ))}
+                )}
             </div>
         </div>
     );
