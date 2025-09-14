@@ -817,7 +817,7 @@ function Teamdash() {
                     <NumberPuzzleGame onGameEnd={handlePuzzleEnd} />
                 </div>
             </Modal>
-            <Modal isOpen={isStopTheBarModalOpen} onRequestClose={() => !isSubmittingBarScore && setIsStopTheBarModalOpen(false)} style={{...customModalStyles, content: {...customModalStyles.content, width: 'auto', maxWidth: '420px'}}} contentLabel="Stop The Bar Game">
+            <Modal isOpen={isStopTheBarModalOpen} onRequestClose={() => !isSubmittingBarScore && setIsStopTheBarModalOpen(false)} style={{...customModalStyles, content: {...customModalStyles.content, width: 'auto', maxWidth: '520px'}}} contentLabel="Stop The Bar Game">
                 <div className="relative">
                     {isSubmittingBarScore && (
                        <div className="absolute inset-0 bg-gray-900/80 flex flex-col justify-center items-center rounded-lg z-20">
@@ -955,9 +955,9 @@ function Teamdash() {
                                             className="w-full p-4 bg-pink-600/80 hover:bg-pink-700 rounded-lg text-center font-bold disabled:opacity-70 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-3 min-h-[72px]"
                                         >
                                             {team.stopTheBarPlayed ? (
-                                                <span className="text-lg">Timing Score: {team.stopTheBarScore}</span>
+                                                <span className="text-lg"> Memory Score: {team.stopTheBarScore}</span>
                                             ) : isBarGameOpen ? (
-                                                <span className="text-lg">Flash Game Challenge</span>
+                                                <span className="text-lg">Hand Seal Memory Challenge</span>
                                             ) : (
                                                 <>
                                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>

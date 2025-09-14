@@ -1,176 +1,251 @@
 import React, { useState, useEffect, useCallback } from 'react';
 
-// --- Game Configuration (Corrected & Harder) ---
-const ALL_ICONS = [
-    '💻', '⚙️', '🚀', '🌐', '💡', '🔥', '🧠', '⚡️', '⚛️', 
-    '🛡️', '🛰️', '💎', '📈', '🔑', '🔬', '🔭'
-];
+// A helper function for creating delays
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Speed progression (Adjusted for multi-flash clarity)
-const getSpeed = (round) => {
-    if (round <= 2) return { flashTime: 200, delay: 100 };
-    if (round <= 5) return { flashTime: 150, delay: 70 };
-    return { flashTime: 100, delay: 40 }; 
-};
-
+// Helper function to shuffle an array (Fisher-Yates shuffle)
 const shuffleArray = (array) => {
+    let currentIndex = array.length, randomIndex;
     const newArray = [...array];
-    for (let i = newArray.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+    while (currentIndex !== 0) {
+        randomIndex = Math.floor(Math.random() * currentIndex);
+        currentIndex--;
+        [newArray[currentIndex], newArray[randomIndex]] = [
+            newArray[randomIndex], newArray[currentIndex]];
     }
     return newArray;
 };
 
-const CodeSequenceGame = ({ onGameEnd }) => {
-    const [gameState, setGameState] = useState('instructions');
-    const [sequence, setSequence] = useState([]);
-    const [playerGuess, setPlayerGuess] = useState([]);
-    const [activeIcon, setActiveIcon] = useState(null);
-    const [gameIcons, setGameIcons] = useState([]);
-    const [round, setRound] = useState(0); // Use a simple, reliable round counter
+const SEALS = ['🐵', '🐗', '🐏', '🐰', '🐍', '🐲', '🐭', '🐂', '🐯', '🐔', '🐶', '🐴'];
+const MAX_LEVEL = 20; // now 20 rounds total
 
-    // --- CORRECTED: Flash sequence logic ---
-    const flashSequence = useCallback((sequenceToFlash) => {
-        // Use the simple `round` state for speed calculation
-        const { flashTime, delay } = getSpeed(round);
-        let i = 0;
-        const interval = setInterval(() => {
-            setActiveIcon(sequenceToFlash[i]);
-            setTimeout(() => setActiveIcon(null), flashTime);
-            i++;
-            if (i >= sequenceToFlash.length) {
-                clearInterval(interval);
-                setGameState('playing');
+// Speed progression for displaying the sequence
+const getSpeed = (level) => {
+    if (level < 4) return 300; // Slower for the first 3
+    if (level < 8) return 150; // Faster for the next 4
+    return 100; // Very fast for the rest
+};
+
+const gameStyles = `
+    .game-body { background-color: #1a1a2e; color: #e0e0e0; font-family: 'Roboto', sans-serif; display: flex; justify-content: center; align-items: center; padding: 20px; }
+    #game-container { background-color: #16213e; padding: 20px; border-radius: 15px; box-shadow: 0 0 20px rgba(227, 20, 44, 0.5); border: 2px solid #e94560; width: 100%; max-width: 500px; text-align: center; }
+    h1 { color: #e94560; text-transform: uppercase; letter-spacing: 2px; }
+    #status-bar { display: flex; justify-content: space-between; font-size: 1.2em; margin-bottom: 20px; font-weight: bold; }
+    .display-area { background-color: #0f3460; border: 2px solid #533483; border-radius: 10px; min-height: 80px; margin-bottom: 20px; display: flex; justify-content: center; align-items: center; padding: 10px; font-size: 2.5em; letter-spacing: 10px; flex-wrap: wrap; }
+    #message-text { font-size: 0.5em; color: #a0a0a0; letter-spacing: 1px; }
+    #seal-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+    .seal-button { background-color: #533483; border: 2px solid #e94560; border-radius: 10px; font-size: 2em; cursor: pointer; padding: 15px; transition: all 0.2s ease; user-select: none; }
+    .seal-button:hover:not(:disabled) { background-color: #e94560; transform: scale(1.1); }
+    .seal-button:disabled { opacity: 0.5; cursor: not-allowed; }
+    #start-button { background-color: #e94560; color: #fff; border: none; border-radius: 8px; padding: 15px 30px; font-size: 1.2em; cursor: pointer; margin-top: 20px; text-transform: uppercase; transition: background-color 0.3s; }
+    #start-button:hover { background-color: #c73048; }
+    #timer-display { color: #e94560; font-weight: bold; font-size: 1.5em; margin-bottom: 15px; text-shadow: 0 0 5px #e94560; }
+`;
+
+const StopTheBarGame = ({ onGameEnd }) => {
+    // --- State Management ---
+    const [level, setLevel] = useState(1);
+    const [score, setScore] = useState(0);
+    const [gameSequence, setGameSequence] = useState([]);
+    const [playerSequence, setPlayerSequence] = useState([]);
+    const [isPlayerTurn, setIsPlayerTurn] = useState(false);
+    const [isDisplayingSequence, setIsDisplayingSequence] = useState(false);
+    const [gameMessage, setGameMessage] = useState('Click Start for a true challenge.');
+    const [isGameActive, setIsGameActive] = useState(false);
+    const [shuffledSeals, setShuffledSeals] = useState([...SEALS]);
+    const [timeLeft, setTimeLeft] = useState(0);
+    const [isReverseMode, setIsReverseMode] = useState(false);
+    const [showInstructions, setShowInstructions] = useState(true);
+
+    const gameOver = useCallback((message) => {
+        setGameMessage(message);
+        setIsGameActive(false);
+        setIsPlayerTurn(false);
+    }, []);
+
+    // Effect to trigger onGameEnd when the game is no longer active
+    useEffect(() => {
+        if (!isGameActive && score > 0 && onGameEnd) {
+            onGameEnd(score);
+        }
+    }, [isGameActive, score, onGameEnd]);
+
+    // --- Game Logic ---
+    const startGame = () => {
+        setShowInstructions(false);
+        setLevel(1);
+        setScore(0);
+        setGameSequence([]);
+        setPlayerSequence([]);
+        setIsReverseMode(false);
+        setIsGameActive(true);
+        setGameMessage('Prepare yourself...');
+    };
+
+    // This effect controls the start of each round
+    useEffect(() => {
+        if (!isGameActive) return;
+
+        const roundTimer = setTimeout(() => {
+            setIsPlayerTurn(false);
+            setPlayerSequence([]);
+            
+            const reverseChance = level >= 5 ? 0.4 : 0;
+            const newReverseMode = Math.random() < reverseChance;
+            setIsReverseMode(newReverseMode);
+            
+            setShuffledSeals(shuffleArray(SEALS));
+            const newSeal = SEALS[Math.floor(Math.random() * SEALS.length)];
+            setGameSequence(prev => [...prev, newSeal]);
+            setIsDisplayingSequence(true);
+        }, 1500);
+
+        return () => clearTimeout(roundTimer);
+    }, [isGameActive, level]);
+
+    // This effect handles displaying the sequence
+    useEffect(() => {
+        if (!isDisplayingSequence) return;
+
+        const showSequence = async () => {
+            setGameMessage(isReverseMode ? 'Memorize... IN REVERSE!' : 'Memorize...');
+            const displayTime = getSpeed(level);
+
+            for (let i = 0; i < gameSequence.length; i++) {
+                setGameMessage(gameSequence[i]);
+                await sleep(displayTime);
+                setGameMessage('');
+                await sleep(50); // Brief pause between seals
             }
-        }, flashTime + delay);
-    }, [round]); // Dependency on `round` ensures speed updates correctly
+            
+            setIsDisplayingSequence(false);
+            setGameMessage(isReverseMode ? 'Repeat the sequence BACKWARDS!' : 'Repeat the sequence!');
+            setIsPlayerTurn(true);
+        };
 
-    // --- CORRECTED: New round logic with proper dependencies ---
-    const startNewRound = useCallback((currentSequence) => {
-        const nextRound = round + 1;
-        setRound(nextRound);
+        showSequence();
+    }, [isDisplayingSequence, gameSequence, level, isReverseMode]);
+
+    // --- Player Turn Timer ---
+    useEffect(() => {
+        if (!isPlayerTurn || !isGameActive) return;
+
+        const timeAllowed = 3 + Math.floor(gameSequence.length * 0.5);
+        setTimeLeft(timeAllowed);
+
+        const timerId = setInterval(() => {
+            setTimeLeft(prevTime => {
+                if (prevTime <= 1) {
+                    clearInterval(timerId);
+                    const correctSequence = isReverseMode ? [...gameSequence].reverse() : gameSequence;
+                    gameOver(`Time's up! Sequence was: ${correctSequence.join('')}`);
+                    return 0;
+                }
+                return prevTime - 1;
+            });
+        }, 1000);
+
+        return () => clearInterval(timerId);
+    }, [isPlayerTurn, isGameActive, gameSequence, isReverseMode, gameOver]);
+
+    // This effect checks the player's input
+    useEffect(() => {
+        if (playerSequence.length === 0 || !isPlayerTurn) return;
+
+        const correctSequence = isReverseMode ? [...gameSequence].reverse() : gameSequence;
+        const index = playerSequence.length - 1;
         
-        const newIconsForRound = shuffleArray(ALL_ICONS).slice(0, 9);
-        setGameIcons(newIconsForRound);
-        setPlayerGuess([]);
-        setGameState('watching');
-
-        const nextIcon = newIconsForRound[Math.floor(Math.random() * newIconsForRound.length)];
-        
-        let numberOfFlashes = 1;
-        const randomChance = Math.random();
-        if (nextRound > 4 && randomChance < 0.25) { // 25% chance of triple flash
-            numberOfFlashes = 3;
-        } else if (nextRound > 1 && randomChance < 0.50) { // 50% chance of double flash
-            numberOfFlashes = 2;
-        }
-
-        const newSequence = [...currentSequence];
-        for(let i = 0; i < numberOfFlashes; i++) {
-            newSequence.push(nextIcon);
-        }
-        
-        setSequence(newSequence);
-        flashSequence(newSequence);
-    }, [round, flashSequence]); // Dependency on `round` and `flashSequence` is crucial
-
-    const handlePlayerInput = (icon) => {
-        if (gameState !== 'playing') return;
-
-        const newPlayerGuess = [...playerGuess, icon];
-        setPlayerGuess(newPlayerGuess);
-
-        if (newPlayerGuess[newPlayerGuess.length - 1] !== sequence[newPlayerGuess.length - 1]) {
-            setGameState('finished');
+        if (playerSequence[index] !== correctSequence[index]) {
+            gameOver(`Wrong Seal! Correct sequence was: ${correctSequence.join('')}`);
             return;
         }
 
-        if (newPlayerGuess.length === sequence.length) {
-            setGameState('watching');
-            setTimeout(() => {
-                startNewRound(sequence);
-            }, 1000);
+        if (playerSequence.length === correctSequence.length) {
+            setIsPlayerTurn(false);
+            setScore(prev => prev + 5); // 5 points per round
+            
+            if (level === MAX_LEVEL) {
+                gameOver('IMPOSSIBLE! You are a true Jutsu Master! 🏆');
+            } else {
+                setGameMessage('Correct!');
+                setLevel(prev => prev + 1);
+            }
         }
-    };
+    }, [playerSequence, isPlayerTurn, gameSequence, isReverseMode, level, gameOver]);
 
-    const finishGame = useCallback(() => {
-        const score = Math.min(round * 10, 100);
-        setTimeout(() => onGameEnd(score), 1200);
-    }, [round, onGameEnd]);
+    const handleSealClick = useCallback((seal) => {
+        if (!isPlayerTurn) return;
+        setPlayerSequence(prev => [...prev, seal]);
+    }, [isPlayerTurn]);
 
-    useEffect(() => {
-        if (gameState === 'finished') {
-            finishGame();
-        }
-    }, [gameState, finishGame]);
-
-    const startGame = () => {
-        setSequence([]);
-        setRound(0); // Reset round counter
-        setGameState('starting');
-        setTimeout(() => {
-            startNewRound([]);
-        }, 1000);
-    };
-
-    if (gameState === 'instructions') {
+    if (showInstructions) {
         return (
-            <div className="text-center p-4 text-white">
-                <h2 className="text-3xl font-bold font-naruto text-orange-400 mb-4">Code Sequence: EXTREME</h2>
-                <div className="text-left space-y-3 mb-6 max-w-sm mx-auto">
-                    <p><strong>Goal:</strong> Repeat the sequence perfectly. It gets longer and <strong className="text-red-400">FASTER</strong> each round.</p>
-                    <p className="font-bold text-yellow-300">⚠️ RULE #1: The icon pads will shuffle and change after every successful round.</p>
-                    <p className="font-bold text-yellow-300">⚠️ RULE #2: An icon might flash multiple times (2x or 3x). You must press it for each flash!</p>
-                    <p><strong>Scoring:</strong> You get <strong className="text-yellow-300">10 points</strong> for every round you complete (max 100).</p>
+            <div className="game-body">
+                <style>{gameStyles}</style>
+                <div id="game-container">
+                    <h1>Hand Seal Memory Challenge</h1>
+                    <div style={{ textAlign: 'left', margin: '20px 0' }}>
+                        <h2 style={{ color: '#e94560' }}>How to Play:</h2>
+                        <ul style={{ listStyleType: 'disc', paddingLeft: '20px' }}>
+                            <li>Press <b>Start Challenge</b> to begin.</li>
+                            <li>A sequence of hand seals (🐵 🐗 🐏 etc.) will appear one by one.</li>
+                            <li>Memorize the exact order of seals.</li>
+                            <li>When the display ends, click the seals in the correct order.</li>
+                            <li>From level 5 onward, you may be asked to repeat the sequence <b>in reverse</b>.</li>
+                            <li>You only have a limited amount of time to respond, so be quick!</li>
+                        </ul>
+                        <h2 style={{ color: '#e94560', marginTop: '20px' }}>Scoring:</h2>
+                        <ul style={{ listStyleType: 'disc', paddingLeft: '20px' }}>
+                            <li>You get 5 points for each level you complete.</li>
+                            <li>The game has 20 levels total (maximum score = 100 points).</li>
+                            <li>Reach level 20 to become a true Jutsu Master 🏆.</li>
+                        </ul>
+                    </div>
+                    <button id="start-button" onClick={startGame}>Start Challenge</button>
                 </div>
-                <button 
-                    onClick={startGame}
-                    className="w-full max-w-sm bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg text-lg"
-                >
-                    Start Challenge
-                </button>
             </div>
         );
     }
     
+    // --- Render ---
     return (
-        <div className="flex flex-col items-center p-4">
-            <h2 className="text-2xl font-bold font-naruto text-orange-400 mb-4">
-                {gameState === 'watching' && 'Watch Carefully...'}
-                {gameState === 'playing' && 'Your Turn!'}
-                {gameState === 'finished' && 'Game Over!'}
-                {gameState === 'starting' && 'Get Ready...'}
-            </h2>
-            <p className="text-lg mb-4">
-                Round: <span className="font-bold text-white">{round}</span>
-            </p>
-            
-            <div className="grid grid-cols-3 gap-4 w-full max-w-xs">
-                {gameIcons.map((icon, index) => (
-                    <button
-                        key={index}
-                        onClick={() => handlePlayerInput(icon)}
-                        disabled={gameState !== 'playing'}
-                        className={`aspect-square flex items-center justify-center text-4xl rounded-lg transition-all duration-100 transform
-                            ${activeIcon === icon ? 'bg-white scale-110 shadow-lg shadow-white/50' : 'bg-gray-700 hover:bg-gray-600'}
-                            ${gameState !== 'playing' ? 'cursor-not-allowed' : ''}
-                        `}
-                    >
-                        {icon}
-                    </button>
-                ))}
-            </div>
-
-            {gameState === 'finished' && (
-                <div className="mt-6 text-center">
-                    <h3 className="text-2xl font-bold text-red-500 animate-pulse">Sequence Broken!</h3>
-                    <p className="text-lg">You completed {round} rounds.</p>
-                    <p className="text-lg">Submitting your score...</p>
+        <div className="game-body">
+            <style>{gameStyles}</style>
+            <div id="game-container">
+                <h1>Hand Seal Memory</h1>
+                <div id="status-bar">
+                    <div>Round: <span>{level} {isReverseMode && '(Reverse!)'}</span></div>
+                    <div>Score: <span>{score}</span></div>
                 </div>
-            )}
+
+                {isPlayerTurn && <div id="timer-display">Time Left: {timeLeft}s</div>}
+
+                <div id="sequence-display" className="display-area">
+                    {isGameActive ? (
+                        isDisplayingSequence ? gameMessage : 
+                        isPlayerTurn ? playerSequence.join('') : 
+                        <p id="message-text">{gameMessage}</p>
+                    ) : (
+                        <p id="message-text">{gameMessage}</p>
+                    )}
+                </div>
+
+                <div id="seal-grid">
+                    {shuffledSeals.map((seal) => (
+                        <button key={seal} className="seal-button" onClick={() => handleSealClick(seal)} disabled={!isPlayerTurn}>
+                            {seal}
+                        </button>
+                    ))}
+                </div>
+
+                {!isGameActive && (
+                    <button id="start-button" onClick={startGame}>
+                        {score > 0 ? 'Try Again' : 'Start Challenge'}
+                    </button>
+                )}
+            </div>
         </div>
     );
 };
 
-export default CodeSequenceGame;
+export default StopTheBarGame;
