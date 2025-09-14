@@ -5,16 +5,20 @@ import { io } from "socket.io-client";
 
 // --- NEW RUBRICS ---
 const firstReviewRubric = {
-    conceptInnovation: { criteria: "Concept & Innovation", marks: "", max: 20 },
-    technicalFeasibility: { criteria: "Technical Feasibility", marks: "", max: 15 },
-    initialPrototype: { criteria: "Initial Prototype/Wireframe", marks: "", max: 15 },
+    visionArchitecture: { criteria: "Vision, Architecture & Planning", marks: "", max: 15 },
+    coreFunctionality: { criteria: "Core Functionality & Progress", marks: "", max: 15 },
+    technicalFoundation: { criteria: "Technical Foundation & Best Practices", marks: "", max: 10 },
+    communicationProblemSolving: { criteria: "Communication & Problem Solving", marks: "", max: 10 },
 };
 
 const secondReviewRubric = {
-    executionProgress: { criteria: "Execution & Progress", marks: "", max: 20 },
-    technicalComplexity: { criteria: "Technical Complexity", marks: "", max: 15 },
-    presentationDemo: { criteria: "Presentation & Demo", marks: "", max: 15 },
+    innovationImpact: { criteria: "Innovation & Impact", marks: "", max: 10 },
+    finalPresentationDemo: { criteria: "Final Presentation & Live Demo", marks: "", max: 10 },
+    businessViability: { criteria: "Business Viability & Future Scope", marks: "", max: 10 },
+    projectCompletion: { criteria: "Project Completion & Functionality", marks: "", max: 10 },
+    easeOfUse: { criteria: "Ease of Use (Intuitive flow, user-friendly forms)", marks: "", max: 10 },
 };
+
 
 
 // --- SVG Icons for UI Enhancement ---
@@ -73,11 +77,12 @@ function Review() {
 
             try {
                 // CORRECT: Using the new, specific endpoint
-                const res = await axios.get(`${api}/Hack/judge/${judge}/teams`);
+                const res = await axios.get(`${api}/Hack/review/teams/${judge}`);
                 const sortedTeams = res.data.sort((a, b) => a.teamname.localeCompare(b.teamname));
                 setTeams(sortedTeams);
             } catch (error) {
                 console.error("Error fetching teams:", error);
+                setError("Failed to load teams. Please try again later.");
             } finally {
                 setLoading(false);
             }

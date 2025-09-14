@@ -1,7 +1,10 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
 import api from "./api";
-import king from "/public/king.png"; // Assuming you have a crown/king icon
+import { io } from "socket.io-client"; // <-- 1. IMPORT io
+import king from "/public/king.png";
+
+const socket = io(api); // <-- 2. CREATE the socket connection
 
 // --- Helper component for the main list ---
 const RankListItem = ({ team, rank }) => (
@@ -12,7 +15,7 @@ const RankListItem = ({ team, rank }) => (
         <p className="col-span-1 text-center text-gray-300">{team.numberPuzzleScore || 0}</p>
         <p className="col-span-1 text-center text-gray-300">{team.stopTheBarScore || 0}</p>
         <p className="col-span-2 text-center text-gray-300">{team.internalGameScore || 0}</p>
-        <p className="col-span-2 text-right font-bold text-xl text-white">{team.totalGameScore || 0}</p>
+        <p className="col-span-2 text-right font-bold text-xl text-white">{team.totalScore || 0}</p>
     </div>
 );
 
@@ -20,33 +23,50 @@ const RankListItem = ({ team, rank }) => (
 function GameLeaderboard() {
     const [teams, setTeams] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
-        async function fetchData() {
+        async function fetchLeaderboard() {
             try {
-                const response = await axios.get(`${api}/Hack/students`);
-                const calculatedData = response.data.teams.map(team => ({
-                    ...team,
-                    // UPDATED: Now includes all four scores in the total
-                    totalGameScore: (team.memoryGameScore || 0) + (team.numberPuzzleScore || 0) + (team.internalGameScore || 0) + (team.stopTheBarScore || 0)
-                }));
-                const sortedData = calculatedData.sort((a, b) => (b.totalGameScore || 0) - (a.totalGameScore || 0));
-                setTeams(sortedData);
+                const response = await axios.get(`${api}/Hack/leaderboard/game`);
+                setTeams(response.data.leaderboard);
             } catch (error) {
-                console.error("Error fetching teams:", error);
+                console.error("Error fetching leaderboard:", error);
+                setError("Could not load the leaderboard.");
             } finally {
                 setLoading(false);
             }
         }
-        fetchData();
+
+        fetchLeaderboard();
+
+        const handleScoresUpdate = () => {
+            fetchLeaderboard();
+        };
+
+        // Now this will work correctly
+        socket.on('scores:updated', handleScoresUpdate);
+
+        return () => {
+            socket.off('scores:updated', handleScoresUpdate);
+        };
     }, []);
 
+    // ... (rest of your component remains the same)
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#0a0f2c] to-[#120b2e] text-white">
                 <div className="text-xl font-semibold animate-pulse">Loading Leaderboard...</div>
             </div>
         );
+    }
+    
+    if (error) {
+        return (
+             <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#0a0f2c] to-[#120b2e] text-white">
+                <div className="text-xl font-semibold text-red-400">{error}</div>
+            </div>
+        )
     }
 
     const topThree = teams.slice(0, 3);
@@ -68,7 +88,6 @@ function GameLeaderboard() {
                     <p className="text-gray-400">The ultimate champions of the side-quest challenges.</p>
                 </div>
 
-                {/* --- PODIUM FOR TOP 3 --- */}
                 {topThree.length > 0 && (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end mb-16">
                         {topThree.map((team, index) => {
@@ -80,13 +99,12 @@ function GameLeaderboard() {
                                     <div className="text-center">
                                         <p className={`text-4xl font-bold ${styles.rankText}`}>#{rank}</p>
                                         <p className="text-xl font-semibold mt-3 text-white truncate h-7">{team.teamname || "—"}</p>
-                                        <p className={`mt-3 text-5xl font-bold ${styles.scoreText}`}>{team.totalGameScore || 0}</p>
-                                        {/* UPDATED: Score breakdown now shows all games */}
+                                        <p className={`mt-3 text-5xl font-bold ${styles.scoreText}`}>{team.totalScore}</p>
                                         <div className="flex justify-center gap-4 mt-4 pt-4 border-t border-white/10 w-full">
-                                            <div><p className="text-xs text-gray-400">Memory</p><p className="font-semibold text-lg text-white">{team.memoryGameScore || 0}</p></div>
-                                            <div><p className="text-xs text-gray-400">Puzzle</p><p className="font-semibold text-lg text-white">{team.numberPuzzleScore || 0}</p></div>
-                                            <div><p className="text-xs text-gray-400">Timing</p><p className="font-semibold text-lg text-white">{team.stopTheBarScore || 0}</p></div>
-                                            <div><p className="text-xs text-gray-400">Internal</p><p className="font-semibold text-lg text-white">{team.internalGameScore || 0}</p></div>
+                                            <div><p className="text-xs text-gray-400">Memory</p><p className="font-semibold text-lg text-white">{team.memoryGameScore}</p></div>
+                                            <div><p className="text-xs text-gray-400">Puzzle</p><p className="font-semibold text-lg text-white">{team.numberPuzzleScore}</p></div>
+                                            <div><p className="text-xs text-gray-400">Timing</p><p className="font-semibold text-lg text-white">{team.stopTheBarScore}</p></div>
+                                            <div><p className="text-xs text-gray-400">Internal</p><p className="font-semibold text-lg text-white">{team.internalGameScore}</p></div>
                                         </div>
                                     </div>
                                 </div>
@@ -95,10 +113,8 @@ function GameLeaderboard() {
                     </div>
                 )}
 
-                {/* --- LIST FOR THE REST --- */}
                 {theRest.length > 0 && (
                      <div className="space-y-2">
-                        {/* UPDATED: Headers now include all games */}
                         <div className="grid grid-cols-12 items-center gap-4 px-4 text-xs font-bold text-gray-400 uppercase">
                             <p className="col-span-1">Rank</p>
                             <p className="col-span-4">Team</p>
@@ -114,7 +130,7 @@ function GameLeaderboard() {
                     </div>
                 )}
 
-                {teams.length === 0 && !loading && (
+                {teams.length === 0 && (
                     <div className="text-center py-16 bg-white/5 rounded-lg">
                         <p className="text-gray-400">No game scores have been submitted yet.</p>
                     </div>
