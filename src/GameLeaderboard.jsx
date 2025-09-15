@@ -1,10 +1,10 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
 import api from "./api";
-import { io } from "socket.io-client"; // <-- 1. IMPORT io
+import { io } from "socket.io-client"; 
 import king from "/public/king.png";
 
-const socket = io(api); // <-- 2. CREATE the socket connection
+const socket = io(api);
 
 // --- Helper component for the main list ---
 const RankListItem = ({ team, rank }) => (
@@ -52,7 +52,7 @@ function GameLeaderboard() {
         };
     }, []);
 
-    // ... (rest of your component remains the same)
+    
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#0a0f2c] to-[#120b2e] text-white">

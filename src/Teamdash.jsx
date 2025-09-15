@@ -363,22 +363,19 @@ function Teamdash() {
     const [pptData, setPptData] = useState(null);
     const [selectedSet, setSelectedSet] = useState(null);
     const [viewingQr, setViewingQr] = useState(null);
-    const [isNumberPuzzleModalOpen, setIsNumberPuzzleModalOpen] = useState(false); // ADD THIS
+    const [isNumberPuzzleModalOpen, setIsNumberPuzzleModalOpen] = useState(false);
     const [isGameModalOpen, setIsGameModalOpen] = useState(false);
     const [isSubmittingGameScore, setIsSubmittingGameScore] = useState(false);
-    const [isSubmittingPuzzleScore, setIsSubmittingPuzzleScore] = useState(false); // ADD THIS
+    const [isSubmittingPuzzleScore, setIsSubmittingPuzzleScore] = useState(false);
     const [isGameOpen, setIsGameOpen] = useState(false);
     const [gameOpenTime, setGameOpenTime] = useState(null);
-    const [isPuzzleOpen, setIsPuzzleOpen] = useState(false); // ADD THIS
-    const [puzzleOpenTime, setPuzzleOpenTime] = useState(null); // ADD THIS
+    const [isPuzzleOpen, setIsPuzzleOpen] = useState(false);
+    const [puzzleOpenTime, setPuzzleOpenTime] = useState(null);
     const [isStopTheBarModalOpen, setIsStopTheBarModalOpen] = useState(false);
     const [isSubmittingBarScore, setIsSubmittingBarScore] = useState(false);
     const [isBarGameOpen, setIsBarGameOpen] = useState(false);
     const [barGameOpenTime, setBarGameOpenTime] = useState(null);
 
-    // +++ START: MODIFIED verify FUNCTION +++
-    // This function now only handles the FIRST stage of login (HTTP).
-    // The second stage (socket session) is handled by listeners in useEffect.
     const verify = (isUpdate = false) => {
         const token = localStorage.getItem("token") || pass;
         if (!token) {
@@ -391,7 +388,7 @@ function Teamdash() {
         }
         setError("");
 
-        // Set up ONE-TIME listeners for the socket response.
+    
         // These will be automatically removed after they fire once.
         socket.once('login:success', () => {
             // The server approved our session. Now we can complete the login.
@@ -446,7 +443,7 @@ function Teamdash() {
             setTeam(res.data);
         } catch (error) {
             console.error("Failed to refresh team data. Logging out.", error);
-            handleLogout(); // If API call fails (e.g., expired token), log out
+            handleLogout(); // Logout on error
         }
     };
 
@@ -454,10 +451,9 @@ function Teamdash() {
         // This effect runs only ONCE on component mount to set up login listeners.
         const token = localStorage.getItem("token");
 
-        // +++ START: SOCKET LISTENERS FOR LOGIN FLOW +++
+        
         const handleLoginSuccess = async () => {
-            // This is called when the server confirms our session lock is granted.
-            // Now we can safely complete the login process and fetch team data.
+            
             const currentToken = localStorage.getItem("token") || pass;
             if (currentToken) {
                 try {
@@ -474,8 +470,8 @@ function Teamdash() {
         };
 
         const handleLoginError = (data) => {
-            // This is called if the server REJECTS our session lock (multi-login detected).
-            setError(data.message); // This displays the error on the login screen.
+            
+            setError(data.message);
             localStorage.removeItem("token");
             setTeam(null);
             setLoading(false);
@@ -483,7 +479,7 @@ function Teamdash() {
 
         socket.on('login:success', handleLoginSuccess);
         socket.on('login:error', handleLoginError);
-        // +++ END: SOCKET LISTENERS FOR LOGIN FLOW +++
+        
 
         if (token) {
             verify(); // Start the 2-stage login flow if a token is found
@@ -514,7 +510,7 @@ function Teamdash() {
         if (gameOpenTime && new Date() > new Date(gameOpenTime)) {
             setIsGameOpen(true);
         }
-        // ADD THIS CHECK FOR THE PUZZLE GAME
+        
         if (puzzleOpenTime && new Date() > new Date(puzzleOpenTime)) {
             setIsPuzzleOpen(true);
         }
@@ -572,7 +568,7 @@ function Teamdash() {
                 setIsGameOpen(true);
             }
         };
-        const handlePuzzleStatusUpdate = (serverTime) => { // ADD THIS
+        const handlePuzzleStatusUpdate = (serverTime) => {
             if (serverTime && new Date(serverTime) > new Date()) {
                 setPuzzleOpenTime(serverTime);
                 setIsPuzzleOpen(false);
@@ -615,7 +611,7 @@ function Teamdash() {
             socket.off("puzzleStatusUpdate", handlePuzzleStatusUpdate);
             socket.off("stopTheBarStatusUpdate", handleStopTheBarStatusUpdate);
         };
-    }, [team]); // Only re-run this effect if 'team' changes
+    }, [team]); // Dependency on 'team' ensures this effect runs after a successful login.
     const handleBarGameEnd = async (score) => {
         if (!team || team.stopTheBarPlayed) return;
         setIsSubmittingBarScore(true);

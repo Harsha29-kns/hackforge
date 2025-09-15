@@ -95,8 +95,7 @@ function Review() {
     }, [isAuthenticated, judge]);
 
     const filteredTeams = useMemo(() => {
-        // CORRECTED: The server has already done the filtering. 
-        // We just need to add the team number and apply the search query.
+
         if (!teams) return [];
         
         const numberedTeams = teams.map((team, index) => ({...team, teamNumber: index + 1}));

@@ -1,20 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { io } from "socket.io-client";
 import api from "./api";
-import { Clock, Unlock, Lock, Users, Gamepad2, Target } from "lucide-react"; // Added Gamepad2 icon
+import { Clock, Unlock, Lock, Users, Gamepad2, Target } from "lucide-react";
 
 
 const socket = io(api);
 
 function AdminControls() {
-  // State for various controls
+  
   const [domainTime, setDomainTime] = useState("");
   const [regTime, setRegTime] = useState("");
-  const [gameTime, setGameTime] = useState(""); // <-- State for the new game timer
+  const [gameTime, setGameTime] = useState("");
   const [puzzleTime, setPuzzleTime] = useState("");
   const [stopTheBarTime, setStopTheBarTime] = useState("");
 
-  // State for registration controls
+  
   const [regLimitInput, setRegLimitInput] = useState(60);
   const [currentCount, setCurrentCount] = useState(0);
   const [currentLimit, setCurrentLimit] = useState(0);

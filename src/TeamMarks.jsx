@@ -2,7 +2,7 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import api from "./api";
 
-// You can use a library like 'react-icons' for better icons
+
 const CrownIcon = () => <span className="text-2xl">👑</span>;
 
 // A dedicated component for list items to keep the code clean
@@ -31,7 +31,7 @@ const RankListItem = ({ team, rank }) => (
 function TeamMarks() {
     const [teams, setTeams] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [showAll, setShowAll] = useState(false); // State to control visibility of all teams
+    const [showAll, setShowAll] = useState(false);
 
     useEffect(() => {
         async function fetchData() {
@@ -61,7 +61,7 @@ function TeamMarks() {
     const theRest = teams.slice(15);      // Teams ranked 16+
 
     const getPodiumStyle = (rank) => {
-        // ... (this function remains unchanged)
+        
         switch (rank) {
             case 1: return { order: 'md:order-2', scale: 'md:scale-110', borderColor: 'border-yellow-400', bgColor: 'bg-yellow-400/10', textColor: 'text-yellow-300' };
             case 2: return { order: 'md:order-1', scale: 'md:mt-12', borderColor: 'border-gray-400', bgColor: 'bg-gray-400/10', textColor: 'text-gray-300' };

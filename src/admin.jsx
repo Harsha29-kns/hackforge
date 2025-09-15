@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useMemo } from "react"; // NEW: Added useMemo
+import { useEffect, useState, useRef, useMemo } from "react";
 import axios from "axios";
 import api from "./api";
 import { io } from "socket.io-client";
@@ -11,7 +11,7 @@ import { Gem, ArrowLeft, ArrowRight } from "lucide-react";
 
 const socket = io(api);
 
-// --- HELPER COMPONENTS (No changes needed here) ---
+
 const Notification = ({ message, type, onClear }) => {
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -61,7 +61,7 @@ const StatCard = ({ title, value, color }) => (
 const DomainMonitor = ({ teams, domains, onResetDomains }) => {
     const [isLoading, setIsLoading] = useState(false);
     
-    // UPDATED: Use useMemo for derived data to avoid re-calculating on every render
+
     const teamsWithDomain = useMemo(() => teams.filter(team => team.Domain), [teams]);
     const unassignedVerifiedTeams = useMemo(() => teams.filter(team => !team.Domain && team.verified), [teams]);
 
@@ -150,13 +150,13 @@ const DomainMonitor = ({ teams, domains, onResetDomains }) => {
 
 
 function Admin() {
-    // --- STATE AND LOGIC ---
+    
     const [isAuthenticated, setIsAuthenticated] = useState(sessionStorage.getItem("adminAuthenticated") === "true");
     const [passwordInput, setPasswordInput] = useState("");
     const [loginError, setLoginError] = useState("");
     const [notification, setNotification] = useState({ message: '', type: '' });
 
-    // UPDATED: Removed `teams` state. `allTeams` is now the single source of truth.
+
     const [allTeams, setAllTeams] = useState([]); 
     const [loading, setLoading] = useState(true);
     const [showVerificationModal, setShowVerificationModal] = useState(false);
@@ -190,10 +190,10 @@ function Admin() {
     const [isSubmittingScore, setIsSubmittingScore] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     
-    // NEW: State to hold the single team being rendered for PDF generation
+ 
     const [teamForPdf, setTeamForPdf] = useState(null);
     
-    // NEW: Define a constant for pagination
+    
     const ITEMS_PER_PAGE = 20;
 
     const handleInternalScoreSubmit = async (e) => {
@@ -450,7 +450,7 @@ function Admin() {
             );
     }, [allTeams, verificationTab, verificationSearchTerm]);
 
-    // NEW: Calculate pagination values from the master `allTeams` list.
+    
     const totalPages = Math.ceil(allTeams.length / ITEMS_PER_PAGE);
     const paginatedTeams = useMemo(() => {
         return allTeams.slice(

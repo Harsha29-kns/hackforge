@@ -19,7 +19,7 @@ const StatCard = ({ icon, title, value, color, unit = '' }) => (
 
 function AttendanceDetail() {
     const [teams, setTeams] = useState([]);
-    const [allTeamsForStats, setAllTeamsForStats] = useState([]); // New state to hold all teams for stats calculation
+    const [allTeamsForStats, setAllTeamsForStats] = useState([]);
     const [loading, setLoading] = useState(true);
     const [statsRound, setStatsRound] = useState(1);
     const [searchTerm, setSearchTerm] = useState("");
@@ -30,7 +30,7 @@ function AttendanceDetail() {
         async function fetchData() {
             setLoading(true);
             try {
-                // Fetch the paginated list of teams for display
+                // Fetch paginated teams for display
                 const pagedRes = await axios.get(`${api}/Hack/students?page=${currentPage}&limit=20`);
                 setTeams(pagedRes.data.teams);
                 setTotalPages(pagedRes.data.totalPages);
@@ -96,7 +96,7 @@ function AttendanceDetail() {
 
     const handleDownloadCsv = () => {
         const flatData = [];
-        // Important: Use `allTeamsForStats` for the CSV export to get all data, not just the current page
+        
         allTeamsForStats.forEach(team => {
             flatData.push({
                 "Team Name": team.teamname, "Sector": team.Sector, "Member Name": team.name,
