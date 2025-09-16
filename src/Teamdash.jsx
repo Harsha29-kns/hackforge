@@ -37,10 +37,10 @@ const Timeline = ({ milestones, currentTime }) => {
     const totalDuration = milestones[milestones.length - 1].time - milestones[0].time;
     const elapsedDuration = currentTime - milestones[0].time;
     const progressPercentage = Math.max(0, Math.min(100, (elapsedDuration / totalDuration) * 100));
-
+    
     return (
         // Increased vertical padding to make space for labels
-        <div className="w-full py-10">
+        <div className="w-full py-10 relative sticky top-0 bg-black z-50">
             <div className="relative">
                 {/* Background Line */}
                 <div className="absolute top-1/2 -translate-y-1/2 left-0 w-full h-1 bg-gray-700 rounded-full"></div>
@@ -263,58 +263,68 @@ const DomainSelectionModal = ({ isOpen, onClose, isSubmitting, selectedSet, doma
     };
 
     return (
-        <Modal isOpen={isOpen} onRequestClose={onClose} style={{...customModalStyles, content: {...customModalStyles.content, width: '700px'}}} contentLabel="Domain Selection" appElement={document.getElementById('root') || undefined}>
-            <div className="relative">
-                {isSubmitting && (
-                    <div className="absolute inset-0 bg-gray-900/80 flex flex-col justify-center items-center rounded-lg z-20">
-                        <img src={lod} className="w-40 h-40" alt="Loading..." />
-                        <p className="text-orange-400 font-naruto text-2xl mt-4">Confirming Your Path...</p>
-                    </div>
-                )}
-                <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-bold text-orange-400 font-naruto">Choose Your Path in {selectedSet}</h2>
-                    <button onClick={onClose} className="text-3xl" disabled={isSubmitting}>×</button>
-                </div>
-                {isLoading ? (
-                    <div className="h-[40vh] flex flex-col justify-center items-center">
-                        <img src={lod} className="w-32 h-32" alt="Loading..." />
-                        <p className="text-orange-400 font-naruto text-xl mt-4">Fetching Problem Statements...</p>
-                    </div>
-                ) : (
-                    <div className="max-h-[60vh] overflow-y-auto pr-2 flex flex-col gap-3">
-                        {domainData.filter(d => d.set === selectedSet).map(domain => (
-                            <div
-                                key={domain.id}
-                                onClick={() => domain.slots > 0 && handleSelect(domain.id)}
-                                className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all duration-200
-                                    ${selectedDomain === domain.id
-                                        ? 'bg-orange-600/80 border-orange-400 scale-105'
-                                        : domain.slots === 0
-                                        ? 'bg-gray-800 border-gray-700 opacity-50 cursor-not-allowed'
-                                        : 'bg-gray-800 border-gray-600 hover:bg-gray-700 hover:border-orange-500 cursor-pointer'
-                                    }`
-                                }
-                            >
-                                <div>
-                                    <h3 className="font-bold text-lg">{domain.name}</h3>
-                                    <p className="text-sm text-gray-400">{domain.description}</p>
-                                </div>
-                                <SlotProgressBar slots={domain.slots} total={10} />
-                            </div>
-                        ))}
-                    </div>
-                )}
-                <div className="mt-6 flex justify-end">
-                    <button
-                        onClick={handleSubmit}
-                        className="px-8 py-3 rounded-lg bg-orange-600 text-white font-bold hover:bg-orange-700 disabled:opacity-50 transition-colors"
-                        disabled={!selectedDomain || isSubmitting}
-                    >
-                        Confirm Selection
-                    </button>
-                </div>
+        <Modal 
+    isOpen={isOpen} 
+    onRequestClose={onClose} 
+    // MODIFICATION 1: Increased width from 700px to 850px
+    style={{...customModalStyles, content: {...customModalStyles.content, width: '950px'}}} 
+    contentLabel="Domain Selection" 
+    appElement={document.getElementById('root') || undefined}
+>
+    <div className="relative">
+        {isSubmitting && (
+            <div className="absolute inset-0 bg-gray-900/80 flex flex-col justify-center items-center rounded-lg z-20">
+                <img src={lod} className="w-40 h-40" alt="Loading..." />
+                <p className="text-orange-400 font-naruto text-2xl mt-4">Confirming Your Path...</p>
             </div>
-        </Modal>
+        )}
+        <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-orange-400 font-naruto">Choose Your Path in {selectedSet}</h2>
+            <button onClick={onClose} className="text-3xl" disabled={isSubmitting}>×</button>
+        </div>
+        {isLoading ? (
+            <div className="h-[40vh] flex flex-col justify-center items-center">
+                <img src={lod} className="w-32 h-32" alt="Loading..." />
+                <p className="text-orange-400 font-naruto text-xl mt-4">Fetching Problem Statements...</p>
+            </div>
+        ) : (
+            // MODIFICATION 2: Increased max-height from 60vh to 75vh to allow more vertical space
+            <div className="max-h-[75vh] overflow-y-auto pr-2 flex flex-col gap-3">
+                {domainData.filter(d => d.set === selectedSet).map(domain => (
+                    <div
+                        key={domain.id}
+                        onClick={() => domain.slots > 0 && handleSelect(domain.id)}
+                        // MODIFICATION 3: Changed items-center to items-start for better alignment with long text
+                        className={`flex items-start justify-between p-4 rounded-xl border-2 transition-all duration-200
+                            ${selectedDomain === domain.id
+                                ? 'bg-orange-600/80 border-orange-400 scale-105'
+                                : domain.slots === 0
+                                ? 'bg-gray-800 border-gray-700 opacity-50 cursor-not-allowed'
+                                : 'bg-gray-800 border-gray-600 hover:bg-gray-700 hover:border-orange-500 cursor-pointer'
+                            }`
+                        }
+                    >
+                        {/* MODIFICATION 4: Added flex-1 to this div so it takes up available space and text can wrap properly */}
+                        <div className="flex-1 mr-4">
+                            <h3 className="font-bold text-lg">{domain.name}</h3>
+                            <p className="text-sm text-gray-400">{domain.description}</p>
+                        </div>
+                        <SlotProgressBar slots={domain.slots} total={10} />
+                    </div>
+                ))}
+            </div>
+        )}
+        <div className="mt-6 flex justify-end">
+            <button
+                onClick={handleSubmit}
+                className="px-8 py-3 rounded-lg bg-orange-600 text-white font-bold hover:bg-orange-700 disabled:opacity-50 transition-colors"
+                disabled={!selectedDomain || isSubmitting}
+            >
+                Confirm Selection
+            </button>
+        </div>
+    </div>
+</Modal>
     );
 };
 
@@ -384,6 +394,7 @@ function Teamdash() {
     const [teamName, setTeamName] = useState(""); // ✨ NEW: State for team name input
     const [isLoginVisible, setIsLoginVisible] = useState(false); // ✨ NEW: State for login animation
     const [team, setTeam] = useState(null);
+    const [isTimelineVisible, setIsTimelineVisible] = useState(false);
     const [DomainOpen, setDomainOpen] = useState(false);
     const [domainOpenTime, setDomainOpenTime] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -923,21 +934,32 @@ function Teamdash() {
                                 </h1>
 
                                 {/* Right Section: Logout */}
+                                <div className="flex items-center gap-4">
+                                {/*  Add the button to show/hide the tracker. */}
+                                <button
+                                    onClick={() => setIsTimelineVisible(!isTimelineVisible)}
+                                    className="bg-blue-600/80 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md"
+                                >
+                                    {isTimelineVisible ? 'Hide Tracker' : 'Show Tracker'}
+                                </button>
                                 <button
                                 onClick={handleLogout}
                                 className="bg-red-600/80 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md"
                                 >
                                 Logout
                                 </button>
+                                </div>
                             </div>
                             </header>
 
                     
-                    <div className="flex-shrink-0 bg-black/20 p-4 border-b border-gray-700/50">
-                        <div className="max-w-4xl mx-auto">
-                           <Timeline milestones={eventMilestones} currentTime={currentTime} />
-                        </div>
-                    </div>
+                            {isTimelineVisible && (
+                                <div className="flex-shrink-0 bg-black/20 p-4 border-b border-gray-700/50">
+                                    <div className="max-w-4xl mx-auto">
+                                        <Timeline milestones={eventMilestones} currentTime={currentTime.getTime()} />
+                                    </div>
+                                </div>
+                            )}
 
                     <main className="flex-grow container mx-auto px-6 pt-4 pb-6 overflow-y-auto">
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -946,8 +968,8 @@ function Teamdash() {
                                 {/* Mission Control */}
                                 <div className="bg-black/20 rounded-lg border border-gray-700/50 p-5">
                                     <h2 className="text-xl font-bold font-naruto text-orange-400 border-b-2 border-orange-500/30 pb-2 mb-4">MISSION CONTROL</h2>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="bg-gray-800/60 p-4 rounded-lg flex-grow flex flex-col justify-center">
+                                    <div className="grid grid-cols-1  gap-4">
+                                        <div className="bg-gray-800/60 p-4 rounded-lg">
                                             <h3 className="font-bold text-lg mb-3 text-center">Problem Statement Assignment</h3>
                                             {selectedProblemStatement ? (
                                                 <div className="text-left py-2 px-4"> {/* Changed to text-left */}
@@ -1052,7 +1074,7 @@ function Teamdash() {
                                     <div className="space-y-3 overflow-y-auto pr-2">
                                         <div className="flex items-center justify-between p-3 bg-yellow-500/10 rounded-lg">
                                             <div className="flex items-center gap-3">
-                                                <img src={king} alt="Leader" className="w-9 h-9"/>
+                                                <span className="w-9 h-9 flex-shrink-0 flex items-center justify-center bg-orange-500/20 rounded-full font-bold">{team.name.charAt(0)}</span>
                                                 <div>
                                                     <p className="font-bold text-yellow-300">{team.name}</p>
                                                     <p className="text-xs text-yellow-400/70">{team.registrationNumber}</p>
