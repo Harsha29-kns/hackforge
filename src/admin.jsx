@@ -76,7 +76,7 @@ const DomainMonitor = ({ teams, domains, onResetDomains }) => {
     return (
         <div>
             <div className="flex flex-col md:flex-row justify-between md:items-center mb-6 gap-4">
-                <h2 className="text-4xl font-naruto text-orange-400">Domain Monitor</h2>
+                <h2 className="text-4xl font-naruto text-orange-400">Statements Monitor</h2>
                 <button
                     onClick={handleResetClick}
                     disabled={isLoading}
@@ -86,13 +86,13 @@ const DomainMonitor = ({ teams, domains, onResetDomains }) => {
                 </button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <StatCard title="Teams Assigned to a Domain" value={teamsWithDomain.length} color="border-green-500" />
-                <StatCard title="Unassigned Domains" value={unassignedVerifiedTeams.length} color="border-yellow-500" />
+                <StatCard title="Teams Assigned to a Statements" value={teamsWithDomain.length} color="border-green-500" />
+                <StatCard title="Unassigned Statements" value={unassignedVerifiedTeams.length} color="border-yellow-500" />
             </div>
             <div className="flex flex-col lg:flex-row gap-8">
                 <div className="w-full lg:w-7/12">
                     <div className="bg-gray-800/60 rounded-lg p-6 max-h-[calc(100vh-350px)] overflow-y-auto">
-                        <h3 className="text-2xl font-bold mb-4 text-gray-200">Domain Breakdown</h3>
+                        <h3 className="text-2xl font-bold mb-4 text-gray-200">filled Statement</h3>
                         <div className="space-y-4">
                             {domains.map(domain => {
                                 const assignedTeams = teams.filter(t => t.Domain === domain.name);
@@ -126,7 +126,7 @@ const DomainMonitor = ({ teams, domains, onResetDomains }) => {
                 </div>
                 <div className="w-full lg:w-5/12">
                      <div className="bg-gray-800/60 rounded-lg p-6 max-h-[calc(100vh-350px)] overflow-y-auto">
-                        <h3 className="text-2xl font-bold mb-4 text-gray-200">Unassigned Domains</h3>
+                        <h3 className="text-2xl font-bold mb-4 text-gray-200">Unassigned teams</h3>
                         {unassignedVerifiedTeams.length > 0 ? (
                              <ul className="space-y-2">
                                 {unassignedVerifiedTeams.map(team => (
@@ -477,7 +477,7 @@ function Admin() {
                         <button onClick={() => setActiveView('scoring')} className={`p-3 rounded-lg font-semibold text-left transition ${activeView === 'scoring' ? 'bg-orange-600' : 'hover:bg-gray-700/50'}`}>Manual Scoring</button>
                         <button onClick={() => setActiveView('broadcast')} className={`p-3 rounded-lg font-semibold text-left transition ${activeView === 'broadcast' ? 'bg-orange-600' : 'hover:bg-gray-700/50'}`}>Broadcast Center</button>
                         <button onClick={() => setActiveView('controls')} className={`p-3 rounded-lg font-semibold text-left transition ${activeView === 'controls' ? 'bg-orange-600' : 'hover:bg-gray-700/50'}`}>Event Controls</button>
-                        <button onClick={() => setActiveView('domains')} className={`p-3 rounded-lg font-semibold text-left transition ${activeView === 'domains' ? 'bg-orange-600' : 'hover:bg-gray-700/50'}`}>Domain Monitor</button>
+                        <button onClick={() => setActiveView('domains')} className={`p-3 rounded-lg font-semibold text-left transition ${activeView === 'domains' ? 'bg-orange-600' : 'hover:bg-gray-700/50'}`}>Problem Monitor</button>
                         <button onClick={() => setActiveView('export')} className={`p-3 rounded-lg font-semibold text-left transition ${activeView === 'export' ? 'bg-orange-600' : 'hover:bg-gray-700/50'}`}>Export Data</button>
                     </nav>
                     <div className="space-y-4">

@@ -112,6 +112,48 @@ const QrModal = ({ isOpen, onClose, qrUrl, name }) => (
     </Modal>
 );
 
+// --- CORRECTED COUNTDOWN TIMER ---
+function CountdownTimer({ targetTime, onTimerEnd }) {
+    const [timeLeft, setTimeLeft] = useState("");
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            const now = new Date();
+            const target = new Date(targetTime);
+            const difference = target - now;
+
+            if (difference > 0) {
+                // Correctly calculates days, hours, minutes, and seconds
+                const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+                
+                let timeString = "";
+                if (days > 0) timeString += `${days}d `; // Add days if they exist
+                timeString += `${hours}h ${minutes}m ${seconds}s`;
+                setTimeLeft(timeString);
+
+            } else {
+                setTimeLeft("Opening...");
+                clearInterval(interval);
+                if (onTimerEnd) onTimerEnd();
+            }
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [targetTime, onTimerEnd]);
+
+    return (
+        <div className="text-center text-gray-400 flex flex-col items-center justify-center gap-3 h-full">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+            <p className="font-semibold text-lg">Problem Statements selection opens in:</p>
+            <p className="text-2xl font-bold text-white">{timeLeft}</p>
+        </div>
+    );
+}
+
+
 // +++++++++++++ START: NEW ATTENDANCE MODAL +++++++++++++
 const AttendanceModal = ({ isOpen, onClose, team, attendanceIcon }) => {
     const getAttendanceStatus = (member, round) => member?.attendance?.find(a => a.round === round)?.status || null;
@@ -236,7 +278,7 @@ const DomainSelectionModal = ({ isOpen, onClose, isSubmitting, selectedSet, doma
                 {isLoading ? (
                     <div className="h-[40vh] flex flex-col justify-center items-center">
                         <img src={lod} className="w-32 h-32" alt="Loading..." />
-                        <p className="text-orange-400 font-naruto text-xl mt-4">Fetching Domains...</p>
+                        <p className="text-orange-400 font-naruto text-xl mt-4">Fetching Problem Statements...</p>
                     </div>
                 ) : (
                     <div className="max-h-[60vh] overflow-y-auto pr-2 flex flex-col gap-3">
@@ -500,6 +542,20 @@ function Teamdash() {
         // This effect sets up all listeners that should only be active AFTER a successful login.
         if (!team) return;
 
+        const handleDomainStat = (res) => {
+            if (res && new Date(res) > new Date()) {
+                setDomainOpen(false);
+                setDomainOpenTime(res);
+            } else if (res) {
+                setDomainOpen(true);
+                setDomainOpenTime(null);
+            }
+            else {
+                setDomainOpen(false);
+                setDomainOpenTime(null);
+            }
+        };
+
         // Start emitting requests for initial dashboard data
         socket.emit("domainStat");
         socket.emit("client:getDomains");
@@ -537,7 +593,7 @@ function Teamdash() {
             setIsDomainListLoading(false);
         };
 
-        const handleDomainStat = (res) => {
+        {/*const handleDomainStat = (res) => {
             if (typeof res === 'string' && new Date(res) > new Date()) {
                 setDomainOpen(false);
                 setDomainOpenTime(res);
@@ -545,14 +601,14 @@ function Teamdash() {
                 setDomainOpen(!!res);
                 setDomainOpenTime(null);
             }
-        };
+        };*/}
 
         const handleDomainSelected = (data) => {
             setIsSubmittingDomain(false);
             if (data.error) {
                 alert(`Error: ${data.error}`);
             } else if (data.success) {
-                alert(`Successfully selected domain: ${data.domain.name}!`);
+                alert(`Successfully selected problem statement: ${data.domain.name}!`);
                 setIsDomainModalOpen(false);
                 setSelectedSet(null);
                 refreshTeamData();
@@ -586,6 +642,7 @@ function Teamdash() {
                 setIsBarGameOpen(true);
             }
         };
+        
 
         // Set up all in-app listeners
         socket.on("team", handleTeamUpdate);
@@ -697,6 +754,7 @@ function Teamdash() {
         return new Date(isoString).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
     };
     
+    
     // ✨ NEW LOGIN PAGE: A redesigned, more engaging login screen with new animations and fields.
     if (!team && !loading) {
         return (
@@ -764,11 +822,15 @@ function Teamdash() {
             </div>
         );
     }
+
+    const selectedProblemStatement = team?.Domain && DomainData.length > 0
+        ? DomainData.find(ps => ps.name === team.Domain)
+        : null;
     
     // --- EVENT DATA ---
     const eventMilestones = [ 
         { name: 'Event Start', time: new Date('2025-09-03T09:00:00'), major: false }, 
-        { name: 'Domain Selection Opens', time: new Date('2025-09-03T10:00:00'), major: true }, 
+        { name: 'Problem Statement Selection Opens', time: new Date('2025-09-03T10:00:00'), major: true }, 
         { name: 'Lunch', time: new Date('2025-09-03T16:00:00'), major: false }, 
         { name: 'First Review', time: new Date('2025-09-03T18:00:00'), major: true }, 
         { name: 'Dinner', time: new Date('2025-09-03T21:00:00'), major: false }, 
@@ -880,8 +942,14 @@ function Teamdash() {
                                     <h2 className="text-xl font-bold font-naruto text-orange-400 border-b-2 border-orange-500/30 pb-2 mb-4">MISSION CONTROL</h2>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="bg-gray-800/60 p-4 rounded-lg flex-grow flex flex-col justify-center">
-                                            <h3 className="font-bold text-lg mb-3 text-center">Domain Assignment</h3>
-                                            {team.Domain ? (
+                                            <h3 className="font-bold text-lg mb-3 text-center">Problem Statement Assignment</h3>
+                                            {selectedProblemStatement ? (
+                                                <div className="text-left py-2 px-4"> {/* Changed to text-left */}
+                                                <p className="text-2xl font-bold text-green-400 mb-2">{selectedProblemStatement.name}</p>
+                                                <p className="text-base text-gray-300">{selectedProblemStatement.description}</p> {/* Increased font size */}
+                                            </div>
+                                            ) :
+                                            team.Domain ? (
                                                 <p className="text-center text-3xl font-bold text-green-400 py-2">{team.Domain}</p>
                                             ) : (
                                                 DomainOpen ? (
@@ -892,20 +960,17 @@ function Teamdash() {
                                                             ))}
                                                         </div>
                                                     ) : (
-                                                        <p className="text-center text-gray-400 animate-pulse">Loading domain sets...</p>
+                                                        <p className="text-center text-gray-400 animate-pulse">Loading statements sets...</p>
                                                     )
                                                 ) : (
                                                     domainOpenTime ? (
-                                                        <div className="text-center text-gray-400 flex flex-col items-center justify-center gap-3 h-full">
-                                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                                                            <p className="font-semibold text-lg">Domain selection will open soon...</p>
-                                                        </div>
-                                                    ) : (
-                                                        <div className="text-center text-gray-400 flex flex-col items-center justify-center gap-3 h-full">
-                                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
-                                                              <p className="font-semibold text-lg">Domain selection is currently closed.</p>
-                                                         </div>
-                                                    )
+                    <CountdownTimer targetTime={domainOpenTime} />
+                ) : (
+                    <div className="text-center text-gray-400 flex flex-col items-center justify-center gap-3 h-full">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                            <p className="font-semibold text-lg">Problem Statement selection is currently closed.</p>
+                        </div>
+                )
                                                 )
                                             )}
                                         </div>
