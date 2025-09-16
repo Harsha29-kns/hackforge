@@ -418,6 +418,10 @@ function Teamdash() {
     const [isBarGameOpen, setIsBarGameOpen] = useState(false);
     const [barGameOpenTime, setBarGameOpenTime] = useState(null);
 
+    //const handleDomainTimerEnd = useCallback(() => {
+    //setDomainOpen(true);
+//}, []);
+
     const verify = (isUpdate = false) => {
         const token = localStorage.getItem("token") || pass;
         if (!token) {
@@ -576,6 +580,8 @@ function Teamdash() {
         if (barGameOpenTime && new Date() > new Date(barGameOpenTime)) setIsBarGameOpen(true);
     }, 1000);
 
+    
+
         const handleTeamUpdate = (updatedTeam) => {
             if (team && updatedTeam._id === team._id) {
                 setTeam(updatedTeam);
@@ -668,7 +674,7 @@ function Teamdash() {
             socket.off("puzzleStatusUpdate", handlePuzzleStatusUpdate);
             socket.off("stopTheBarStatusUpdate", handleStopTheBarStatusUpdate);
         };
-    }, [team]); // Dependency on 'team' ensures this effect runs after a successful login.
+    }, [team, domainOpenTime, gameOpenTime, puzzleOpenTime, barGameOpenTime]); // Dependency on 'team' ensures this effect runs after a successful login.
     const handleBarGameEnd = async (score) => {
         if (!team || team.stopTheBarPlayed) return;
         setIsSubmittingBarScore(true);
