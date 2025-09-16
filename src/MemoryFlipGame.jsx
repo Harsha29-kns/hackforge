@@ -93,7 +93,7 @@ const MemoryFlipGame = ({ onGameEnd }) => {
             }, 1000);
         }
         return () => clearInterval(timerRef.current);
-    }, [gameState, finishGame]);
+    }, [gameState]);
     
     useEffect(() => {
         if (flippedIndices.length === 2) {

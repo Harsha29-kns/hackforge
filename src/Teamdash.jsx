@@ -938,10 +938,10 @@ function Teamdash() {
                                            disabled={team.memoryGamePlayed || !isGameOpen}
                                            className="w-full p-4 bg-indigo-600/80 hover:bg-indigo-600 rounded-lg text-center font-bold disabled:opacity-70 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-3 min-h-[72px]"
                                         >
-                                           {team.memoryGamePlayed ? ( <span className="text-lg">Game Score: {team.memoryGameScore}</span> ) : isGameOpen ? ( <span className="text-lg">Memory Flip Challenge</span> ) : (
+                                           {team.memoryGamePlayed ? ( <span className="text-lg">Flip Game Score: {team.memoryGameScore}</span> ) : isGameOpen ? ( <span className="text-lg">Memory Flip Challenge</span> ) : (
                                                 <>
                                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                                                    <span className="text-base">Game will unlock at {formatUnlockTime(gameOpenTime)}</span>
+                                                    <span className="text-base">Game will Unlock at {formatUnlockTime(gameOpenTime)}</span>
                                                 </>
                                            )}
                                         </button>
@@ -951,13 +951,13 @@ function Teamdash() {
                                             className="w-full p-4 bg-pink-600/80 hover:bg-pink-700 rounded-lg text-center font-bold disabled:opacity-70 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-3 min-h-[72px]"
                                         >
                                             {team.stopTheBarPlayed ? (
-                                                <span className="text-lg"> Memory Score: {team.stopTheBarScore}</span>
+                                                <span className="text-lg"> Sequence Challenge Score: {team.stopTheBarScore}</span>
                                             ) : isBarGameOpen ? (
-                                                <span className="text-lg">Hand Seal Memory Challenge</span>
+                                                <span className="text-lg">Sequence Challenge</span>
                                             ) : (
                                                 <>
                                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                                                    <span className="text-base">Unlocks at {formatUnlockTime(barGameOpenTime)}</span>
+                                                    <span className="text-base">Game will Unlock at {formatUnlockTime(barGameOpenTime)}</span>
                                                 </>
                                             )}
                                         </button>
@@ -969,7 +969,7 @@ function Teamdash() {
                                             {team.numberPuzzlePlayed ? ( <span className="text-lg">Puzzle Score: {team.numberPuzzleScore}</span> ) : isPuzzleOpen ? ( <span className="text-lg">Number Puzzle Challenge</span> ) : (
                                                     <>
                                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                                                        <span className="text-base">Puzzle will unlock at {formatUnlockTime(puzzleOpenTime)}</span>
+                                                        <span className="text-base">Game will Unlock at {formatUnlockTime(puzzleOpenTime)}</span>
                                                     </>
                                             )}
                                         </button>
@@ -977,7 +977,7 @@ function Teamdash() {
                                 </div>
                                 {/* Roster */}
                                 <div className="lg:col-span-1 flex flex-col bg-black/20 rounded-lg border border-gray-700/50 p-5">
-                                    <h2 className="text-xl font-bold font-naruto text-orange-400 border-b-2 border-orange-500/30 pb-2 mb-4">SQUAD ROSTER</h2>
+                                    <h2 className="text-xl font-bold font-naruto text-orange-400 border-b-2 border-orange-500/30 pb-2 mb-4">SQUAD </h2>
                                     <div className="space-y-3 overflow-y-auto pr-2">
                                         <div className="flex items-center justify-between p-3 bg-yellow-500/10 rounded-lg">
                                             <div className="flex items-center gap-3">
