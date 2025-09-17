@@ -28,63 +28,6 @@ const customModalStyles = {
     overlay: { backgroundColor: 'rgba(0, 0, 0, 0.85)', zIndex: 1000 },
 };
 // --- UPDATED TIMELINE COMPONENT ---
-const Timeline = ({ milestones, currentTime }) => {
-
-    const lastMilestoneIndex = milestones.slice().reverse().findIndex(e => e.time <= currentTime);
-    const currentMilestoneIndex = milestones.length - 1 - lastMilestoneIndex;
-
-    // Calculate the overall progress percentage
-    const totalDuration = milestones[milestones.length - 1].time - milestones[0].time;
-    const elapsedDuration = currentTime - milestones[0].time;
-    const progressPercentage = Math.max(0, Math.min(100, (elapsedDuration / totalDuration) * 100));
-
-    return (
-        // Increased vertical padding to make space for labels
-        <div className="w-full py-10 relative sticky top-0 bg-black z-50">
-            <div className="relative">
-                {/* Background Line */}
-                <div className="absolute top-1/2 -translate-y-1/2 left-0 w-full h-1 bg-gray-700 rounded-full"></div>
-
-                {/* Progress Line */}
-                <div
-                    className="absolute top-1/2 -translate-y-1/2 left-0 h-1 bg-gradient-to-r from-orange-500 to-yellow-400 rounded-full"
-                    style={{ width: `${progressPercentage}%` }}
-                ></div>
-
-                {/* Milestones */}
-                <div className="relative flex justify-between">
-                    {milestones.map((milestone, index) => {
-                        const isCompleted = index <= currentMilestoneIndex;
-                        const isCurrent = index === currentMilestoneIndex;
-
-                        return (
-                            <div key={index} className="relative flex flex-col items-center">
-                                {/* Dot */}
-                                <div
-                                    className={`w-4 h-4 rounded-full border-2 border-gray-900 z-10 transition-all duration-300
-                                        ${isCompleted
-                                            ? (isCurrent ? 'bg-orange-500 scale-125 animate-pulse' : 'bg-green-500')
-                                            : 'bg-gray-500'}
-                                    `}
-                                ></div>
-
-                                {/* Always visible Label */}
-                                <div
-                                    className={`absolute w-max text-center text-xs
-                                        ${index % 2 === 0 ? 'top-full mt-3' : 'bottom-full mb-3'}
-                                    `}
-                                >
-                                    <p className={`font-bold ${isCurrent ? 'text-orange-300' : 'text-gray-200'}`}>{milestone.name}</p>
-                                    <p className="text-gray-400">{new Date(milestone.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
-        </div>
-    );
-};
 
 
 const VideoBackground = () => (
@@ -172,7 +115,7 @@ const AttendanceModal = ({ isOpen, onClose, team, attendanceIcon }) => {
             });
         });
     }
-    const attendancePercentage = totalMembers > 0 ? ((totalPresent / (totalMembers * rounds.length)) * 100).toFixed(1) : 0;
+    
 
     return (
         <Modal isOpen={isOpen} onRequestClose={onClose} style={{...customModalStyles, content: {...customModalStyles.content, width: '950px'}}} contentLabel="Attendance Tracker" appElement={document.getElementById('root') || undefined}>
@@ -185,17 +128,6 @@ const AttendanceModal = ({ isOpen, onClose, team, attendanceIcon }) => {
                     </div>
                 </div>
                 <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors text-3xl font-light">×</button>
-            </div>
-
-            {/* Overall Progress */}
-            <div className="mb-6 bg-gray-900/50 p-4 rounded-lg border border-gray-700">
-                <h3 className="text-lg font-semibold text-center text-gray-300 mb-2">Overall Team Attendance</h3>
-                <div className="flex items-center justify-center gap-4">
-                    <div className="w-full bg-gray-700 rounded-full h-4">
-                        <div className="bg-gradient-to-r from-green-500 to-teal-400 h-4 rounded-full" style={{ width: `${attendancePercentage}%` }}></div>
-                    </div>
-                    <span className="text-xl font-bold text-green-400">{attendancePercentage}%</span>
-                </div>
             </div>
 
             <div className="max-h-[60vh] overflow-y-auto pr-2 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -265,56 +197,35 @@ const customModalStyles2 = {
 };
 
 // --- NEW CONFIRMATION MODAL COMPONENT ---
-const TypeConfirmModal = ({ isOpen, onClose, onConfirm, isSubmitting, title, children }) => {
-    const [confirmText, setConfirmText] = useState("");
-    const isConfirmed = confirmText.toLowerCase() === "confirm";
-
-    useEffect(() => {
-        // Reset text when modal is opened/closed
-        if (!isOpen) {
-            setTimeout(() => setConfirmText(""), 200);
-        }
-    }, [isOpen]);
-
+const ConfirmModal = ({ isOpen, onClose, onConfirm, isSubmitting, title, children }) => {
     return (
-        <Modal
-            isOpen={isOpen}
-            onRequestClose={() => !isSubmitting && onClose()}
-            style={{...customModalStyles, content: {...customModalStyles.content, width: '500px'}}}
-            contentLabel="Confirmation Modal"
-            appElement={document.getElementById('root') || undefined}
-        >
-            <div className="flex flex-col gap-4">
-                <h2 className="text-2xl font-bold text-yellow-400 font-naruto">{title}</h2>
-                <div className="text-gray-300 bg-gray-900/50 p-4 rounded-lg border border-yellow-500/30">
-                    {children}
-                </div>
-                <p className="text-sm text-gray-400">
-                    To proceed, please type <strong className="text-yellow-300">confirm</strong> in the box below.
-                </p>
-                <input
-                    type="text"
-                    value={confirmText}
-                    onChange={(e) => setConfirmText(e.target.value)}
-                    placeholder="Type 'confirm' to proceed"
-                    className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
-                    disabled={isSubmitting}
-                />
-                <div className="mt-2 flex justify-end gap-4">
-                    <button onClick={onClose} className="px-6 py-2 rounded-lg border border-gray-600 hover:bg-gray-700" disabled={isSubmitting}>
-                        Cancel
-                    </button>
-                    <button
-                        onClick={onConfirm}
-                        className="px-6 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={!isConfirmed || isSubmitting}
-                    >
-                        {isSubmitting ? 'Submitting...' : 'Confirm and Submit'}
-                    </button>
-                </div>
-            </div>
-        </Modal>
-    );
+    <Modal
+     isOpen={isOpen}
+     onRequestClose={() => !isSubmitting && onClose()}
+      style={{...customModalStyles, content: {...customModalStyles.content, width: '500px'}}}
+       contentLabel="Confirmation Modal"
+        appElement={document.getElementById('root') || undefined}
+         >
+             <div className="flex flex-col gap-4">
+                 <h2 className="text-2xl font-bold text-yellow-400 font-naruto">{title}</h2>
+                  <div className="text-gray-300 bg-gray-900/50 p-4 rounded-lg border border-yellow-500/30">
+                   {children}
+                    </div>
+                     <div className="mt-2 flex justify-end gap-4">
+                         <button onClick={onClose} className="px-6 py-2 rounded-lg border border-gray-600 hover:bg-gray-700" disabled={isSubmitting}>
+                             Cancel
+                              </button>
+                               <button
+                                onClick={onConfirm}
+                                 className="px-6 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
+                                  disabled={isSubmitting}
+                                   >
+                                     {isSubmitting ? 'Submitting...' : 'Confirm and Submit'}
+                                      </button>
+                                       </div>
+                                        </div>
+                                         </Modal>
+                                         );
 };
 
 
@@ -477,7 +388,6 @@ function Teamdash() {
     const [teamName, setTeamName] = useState(""); // ✨ NEW: State for team name input
     const [isLoginVisible, setIsLoginVisible] = useState(false); // ✨ NEW: State for login animation
     const [team, setTeam] = useState(null);
-    const [isTimelineVisible, setIsTimelineVisible] = useState(false);
     const [DomainOpen, setDomainOpen] = useState(false);
     const [domainOpenTime, setDomainOpenTime] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -938,16 +848,6 @@ function Teamdash() {
         : null;
 
     // --- EVENT DATA ---
-    const eventMilestones = [
-        { name: 'Event Start', time: new Date('2025-09-03T09:00:00'), major: false },
-        { name: 'Problem Statement Selection Opens', time: new Date('2025-09-03T10:00:00'), major: true },
-        { name: 'Lunch', time: new Date('2025-09-03T16:00:00'), major: false },
-        { name: 'First Review', time: new Date('2025-09-03T18:00:00'), major: true },
-        { name: 'Dinner', time: new Date('2025-09-03T21:00:00'), major: false },
-        { name: 'Mid-Point Evaluation', time: new Date('2025-09-03T22:35:00'), major: true },
-        { name: 'Final Presentations', time: new Date('2025-09-03T23:21:00'), major: true },
-        { name: 'Event End', time: new Date('2025-09-13T23:21:00'), major: true },
-    ];
 
     const attendanceRounds = [
         { round: 1, time: '09:30 AM' },
@@ -964,23 +864,22 @@ function Teamdash() {
     return (
         <div className="min-h-screen text-gray-200 font-sans bg-gray-900" style={{ backgroundImage: `url('https://www.pixelstalk.net/wp-content/uploads/2016/06/Dark-Wallpaper-HD-Desktop.jpg')`, backgroundSize: 'cover', backgroundAttachment: 'fixed' }}>
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
-            <TypeConfirmModal
-                isOpen={isConfirmModalOpen}
-                onClose={() => setIsConfirmModalOpen(false)}
-                onConfirm={handleDomain} // <-- The original submit function
-                isSubmitting={isSubmittingDomain}
-                title="Final Confirmation"
-            >
-                <p>You have selected the domain:</p>
-                <p className="text-xl font-bold text-orange-400 my-2 text-center">
-                    {/* Find and display the selected domain's name */}
-                    {DomainData.find(d => d.id === selectedDomain)?.name || "Unknown"}
-                </p>
-                <p className="text-center"> 
-                    Be careful! This is your <strong className="text-red-400">final decision</strong>. 
-                    After this, your team cannot switch to a different project.
-                </p>
-            </TypeConfirmModal>
+            <ConfirmModal
+            isOpen={isConfirmModalOpen}
+            onClose={() => setIsConfirmModalOpen(false)}
+            onConfirm={handleDomain}
+            isSubmitting={isSubmittingDomain}
+            title="Final Confirmation"
+        >
+            <p>You have selected the domain:</p>
+            <p className="text-xl font-bold text-orange-400 my-2 text-center">
+                {DomainData.find(d => d.id === selectedDomain)?.name || "Unknown"}
+            </p>
+            <p className="text-center"> 
+                Be careful! This is your <strong className="text-red-400">final decision</strong>. 
+                After this, your team cannot switch to a different project.
+            </p>
+        </ConfirmModal>
 
             <QrModal isOpen={!!viewingQr} onClose={() => setViewingQr(null)} qrUrl={viewingQr?.url} name={viewingQr?.name} />
             <ReminderModal isOpen={isReminderModalOpen} onClose={() => setIsReminderModalOpen(false)} reminderText={activeReminder} />
@@ -1045,13 +944,7 @@ function Teamdash() {
 
                                 {/* Right Section: Logout */}
                                 <div className="flex items-center gap-4">
-                                {/* Add the button to show/hide the tracker. */}
-                                <button
-                                    onClick={() => setIsTimelineVisible(!isTimelineVisible)}
-                                    className="bg-blue-600/80 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md"
-                                >
-                                    {isTimelineVisible ? 'Hide Tracker' : 'Show Tracker'}
-                                </button>
+                                
                                 <button
                                 onClick={handleLogout}
                                 className="bg-red-600/80 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md"
@@ -1062,14 +955,6 @@ function Teamdash() {
                             </div>
                             </header>
 
-
-                            {isTimelineVisible && (
-                                <div className="flex-shrink-0 bg-black/20 p-4 border-b border-gray-700/50">
-                                    <div className="max-w-4xl mx-auto">
-                                        <Timeline milestones={eventMilestones} currentTime={currentTime.getTime()} />
-                                    </div>
-                                </div>
-                            )}
 
                     <main className="flex-grow max-w-7xl mx-auto px-6 pt-8 pb-6 w-full overflow-y-auto">
                         <div className="flex flex-col gap-6">
