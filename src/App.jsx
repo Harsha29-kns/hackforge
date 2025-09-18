@@ -21,14 +21,14 @@ function App() {
         <Route path='/home' element={<Landing/>}/>
         <Route path='/admin-login' element={<Admin/>}/>
         <Route path='/qratt' element={<Attd/>}/>
-        <Route path='/teamlogin' element={<Teamdash/>}/>
+        <Route path='/teamdash' element={<Teamdash/>}/>
         <Route path='/review' element={<Review/>}/>
         <Route path='/TeamMarks' element={<TeamMarks/>}/>
         <Route path='/attendance-details' element={<AttendanceDetail/>}/>
         <Route path='/admin-controls' element={<AdminControls />} />
         <Route path='/game-leaderboard' element={<GameLeaderboard />} />
         <Route path='/judge-leaderboard' element={<JudgeLeaderboard />} />
-        <Route path="/team-status" element={<TeamLoginStatus />} />
+        <Route path="/status" element={<TeamLoginStatus />} />
         <Route path="/team-qr-scanner" element={<QrScannerTeam />} /> 
       </Routes>           
     );
