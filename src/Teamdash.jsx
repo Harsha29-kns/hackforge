@@ -359,25 +359,38 @@ const GameModal = ({ isOpen, onClose, onGameEnd, isSubmitting }) => (
 
 const AttendanceInfo = ({ onOpenModal }) => {
     return (
-        <div className="bg-black/20 rounded-lg border border-gray-700/50 p-6 flex flex-col items-center">
-            {/* The title is updated to be more general */}
-            <h2 className="text-xl font-bold font-naruto text-orange-400 border-b-2 border-orange-500/30 pb-2 w-full text-center">
-                ATTENDANCE
-            </h2>
+        <div
+    onClick={onOpenModal}
+    className="group relative bg-black/50 border border-orange-500/30 rounded-lg p-6 flex flex-col items-center justify-center text-center h-48 w-full cursor-pointer overflow-hidden transition-all duration-300 hover:border-orange-400 hover:bg-black/70 hover:shadow-lg hover:shadow-orange-500/20"
+>
+    {/* --- Decorative Corner Brackets --- */}
+    <div className="absolute top-0 left-0 w-full h-full p-2">
+        <span className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-orange-500/60 group-hover:border-orange-400 transition-colors duration-300"></span>
+        <span className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-orange-500/60 group-hover:border-orange-400 transition-colors duration-300"></span>
+        <span className="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-orange-500/60 group-hover:border-orange-400 transition-colors duration-300"></span>
+        <span className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-orange-500/60 group-hover:border-orange-400 transition-colors duration-300"></span>
+    </div>
 
-            {/* A descriptive paragraph can be added for better context */}
-            <p className="text-gray-400 mt-4 mb-5 text-center">
-                Click the button below to view your detailed attendance record.
-            </p>
-
-            {/* The button is now the main focus */}
-            <button
-                onClick={onOpenModal}
-                className="w-full p-3 bg-blue-600 hover:bg-blue-700 rounded-lg text-center font-bold text-lg transition-colors duration-200"
-            >
-                View Attendance Details
-            </button>
+    {/* --- Content --- */}
+    <div className="relative z-10 flex flex-col items-center justify-center gap-3">
+        {/* Large Icon with Glow */}
+        <div className="relative">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-orange-400 transition-all duration-300 group-hover:text-orange-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+            {/* Glow effect */}
+            <div className="absolute inset-0 -z-10 bg-orange-500 rounded-full blur-xl opacity-0 group-hover:opacity-40 transition-opacity duration-300"></div>
         </div>
+
+        {/* Title and Call to Action */}
+        <h2 className="text-xl font-bold font-naruto text-orange-400 tracking-wider">
+            ATTENDANCE
+        </h2>
+        <p className="text-sm font-semibold text-gray-400 group-hover:text-white transition-colors duration-300 tracking-widest">
+            VIEW LOG
+        </p>
+    </div>
+</div>
     );
 };
 
@@ -988,39 +1001,70 @@ function Teamdash() {
                         <div className="flex flex-col gap-6">
 
                             {/* 1. Squad */}
-                            <div className="bg-black/20 rounded-lg border border-gray-700/50 p-5">
-                                <h2 className="text-xl font-bold font-naruto text-orange-400 border-b-2 border-orange-500/30 pb-2 mb-4">SQUAD</h2>
-                                <div className="space-y-3 overflow-y-auto pr-2">
-                                    <div className="flex items-center justify-between p-3 bg-yellow-500/10 rounded-lg">
-                                        <div className="flex items-center gap-3">
-                                            {/* name */}
-                                            <span className="w-9 h-9 flex-shrink-0 flex items-center justify-center bg-orange-500/20 rounded-full font-bold">
-                                                {team.name && team.name.trim().charAt(0)}
-                                            </span>
-                                            {/* lead name */}
-                                            <div>
-                                                <p className="font-bold text-yellow-300">{team.name}</p>
-                                                <p className="text-xs text-yellow-400/70">{team.registrationNumber}</p>
-                                            </div>
-                                        </div>
-                                        {team.lead?.qrCode && ( <button onClick={() => setViewingQr({ url: team.lead.qrCode, name: team.name })} className="bg-white p-1 rounded-md hover:scale-110 transition-transform"> <img src={team.lead.qrCode} alt="QR Code" className="w-12 h-12"/> </button> )}
-                                    </div>
-                                    {team.teamMembers.map((member, i) => (
-                                        <div key={i} className="flex items-center justify-between p-3 bg-gray-800/60 rounded-lg">
-                                            <div className="flex items-center gap-3">
-                                                {/* ===== mem name ===== */}
-                                                <span className="w-9 h-9 flex-shrink-0 flex items-center justify-center bg-orange-500/20 rounded-full font-bold">
-                                                    {member.name && member.name.trim().charAt(0)}
-                                                </span>
-                                                {/* ===== mem name ===== */}
-                                                <div> <p className="font-semibold">{member.name}</p> <p className="text-xs text-gray-400">{member.registrationNumber}</p> </div>
-                                            </div>
-                                            {member.qrCode && ( <button onClick={() => setViewingQr({ url: member.qrCode, name: member.name })} className="bg-white p-1 rounded-md hover:scale-110 transition-transform"> <img src={member.qrCode} alt="QR Code" className="w-12 h-12"/> </button> )}
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
+                            <div className="bg-slate-800/70 backdrop-blur-sm border border-cyan-500/30 rounded-lg p-5 font-sans">
+    <div className="pb-4 mb-4">
+        <h2 className="text-2xl font-bold text-cyan-300 tracking-wider">SQUAD ROSTER</h2>
+    </div>
 
+    {/* Grid Container */}
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Team Lead Banner (Spans full width) */}
+        <div className="md:col-span-2 flex items-center justify-between p-4 bg-gray-900/50 rounded-lg border border-cyan-500/50">
+            <div className="flex items-center gap-4">
+                {/* Avatar with Star Icon */}
+                <div className="relative">
+                    <span className="w-12 h-12 flex items-center justify-center bg-cyan-500/20 rounded-full font-bold text-cyan-300 text-xl">
+                        {team.name && team.name.trim().charAt(0)}
+                    </span>
+                    <span className="absolute -bottom-1 -right-1 text-lg">⭐</span>
+                </div>
+                {/* Lead Info */}
+                <div>
+                    <p className="font-bold text-lg text-white">{team.name}</p>
+                    <p className="text-sm text-cyan-400/70">{team.registrationNumber}</p>
+                </div>
+            </div>
+            {/* QR Code */}
+            {team.lead?.qrCode && (
+                <button 
+                    onClick={() => setViewingQr({ url: team.lead.qrCode, name: team.name })} 
+                    className="bg-white p-1 rounded-lg hover:scale-105 transition-transform"
+                >
+                    <img src={team.lead.qrCode} alt="QR Code" className="w-14 h-14" />
+                </button>
+            )}
+        </div>
+
+        {/* Team Member Cards */}
+        {team.teamMembers.map((member, i) => (
+            <div 
+                key={i} 
+                className="group relative flex items-center justify-center h-28 bg-gray-900/50 rounded-lg overflow-hidden cursor-pointer"
+            >
+                {/* Member Info (Visible by default) */}
+                <div className="flex flex-col items-center gap-2 transition-opacity duration-300 group-hover:opacity-0">
+                    <span className="w-10 h-10 flex items-center justify-center bg-gray-700 rounded-full font-semibold text-gray-300">
+                        {member.name && member.name.trim().charAt(0)}
+                    </span>
+                    <div>
+                        <p className="font-semibold text-center text-gray-200">{member.name}</p>
+                        <p className="text-xs text-center text-gray-400">{member.registrationNumber}</p>
+                    </div>
+                </div>
+
+                {/* QR Code (Visible on hover) */}
+                {member.qrCode && (
+                    <div 
+                        onClick={() => setViewingQr({ url: member.qrCode, name: member.name })}
+                        className="absolute inset-0 flex items-center justify-center p-2 bg-gray-800 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                    >
+                        <img src={member.qrCode} alt="QR Code" className="w-24 h-24" />
+                    </div>
+                )}
+            </div>
+        ))}
+    </div>
+</div>
                             {/* 2. Problem Statements (Mission Control) */}
                             <div className="bg-black/20 rounded-lg border border-gray-700/50 p-5">
                                 <h2 className="text-xl font-bold font-naruto text-orange-400 border-b-2 border-orange-500/30 pb-2 mb-4">MISSION CONTROL</h2>
@@ -1112,28 +1156,76 @@ function Teamdash() {
                                 <AttendanceInfo rounds={attendanceRounds} currentTime={currentTime} onOpenModal={() => setIsAttendanceModalOpen(true)} />
 
                                 {/* Intel Feed */}
-                                <div className="bg-black/20 rounded-lg border border-gray-700/50 p-5 flex flex-col">
-                                    <h2 className="text-xl font-bold font-naruto text-orange-400 border-b-2 border-orange-500/30 pb-2">INTEL FEED</h2>
-                                    <div className="space-y-4 overflow-y-auto pr-2 flex-grow mt-4 min-h-[200px]">
-                                        {intelFeed.length > 0 ? intelFeed.map((item, index) => (
-                                            item.type === 'reminder' ? (
-                                                <div key={`rem-${index}`} className="flex gap-3 items-start p-3 bg-gray-800/50 rounded-lg">
-                                                    <span className="mt-1 text-xl">📢</span>
-                                                    <div className="flex-1"><p className="font-semibold text-yellow-400">Admin Reminder</p><p className="text-sm">{item.message}</p><p className="text-xs text-gray-500 mt-1 text-right">{item.timestamp.toLocaleTimeString()}</p></div>
-                                                </div>
-                                            ) : (
-                                                <div key={`iss-${index}`} className="flex gap-3 items-start p-3 bg-gray-800/50 rounded-lg">
-                                                    <span className="mt-1 text-xl">🎫</span>
-                                                    <div className="flex-1"><p className="font-semibold text-blue-400">Support Request Logged</p><p className="text-sm italic">"{item.text}"</p><div className="mt-1 flex justify-between items-center"><span className={`text-xs px-2 py-0.5 rounded-full ${item.status === 'Resolved' ? 'bg-green-500/30 text-green-300' : 'bg-yellow-500/30 text-yellow-300'}`}>{item.status}</span><p className="text-xs text-gray-500">{item.timestamp.toLocaleTimeString()}</p></div></div>
-                                                </div>
-                                            )
-                                        )) : <p className="text-center text-gray-400 mt-10">No new intel.</p>}
-                                    </div>
-                                    <div className="mt-4 flex flex-col gap-3">
-                                        <button onClick={() => setIsAssistanceModalOpen(true)} className="w-full p-4 bg-green-600/80 hover:bg-green-600 rounded-lg text-center font-bold">Request Help</button>
-                                        {pptData && ( <a href={pptData.fileUrl} download className="block text-center p-4 bg-purple-600/80 hover:bg-purple-600 rounded-lg font-bold">Download "{pptData.fileName}"</a> )}
-                                    </div>
-                                </div>
+                               <div className="bg-black rounded-lg shadow-sm border border-gray-700 p-6 flex flex-col font-sans text-white">
+    {/* Header with Title and Actions */}
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-4 border-b border-gray-700">
+        <div>
+            <h2 className="text-lg font-bold text-gray-100">Activity Log</h2>
+            <p className="text-sm text-gray-400">Recent events and notifications.</p>
+        </div>
+        <div className="mt-3 sm:mt-0 flex flex-shrink-0 gap-2">
+            {pptData && (
+                <a
+                    href={pptData.fileUrl}
+                    download
+                    className="px-4 py-2 text-sm font-semibold bg-gray-800 text-gray-100 hover:bg-gray-700 rounded-md transition-colors"
+                >
+                    Download "{pptData.fileName}"
+                </a>
+            )}
+            <button
+                onClick={() => setIsAssistanceModalOpen(true)}
+                className="px-4 py-2 text-sm font-semibold bg-blue-700 text-white hover:bg-blue-600 rounded-md transition-colors"
+            >
+                Request Help
+            </button>
+        </div>
+    </div>
+
+    {/* Feed Timeline */}
+    <div className="mt-6 space-y-1 overflow-y-auto pr-2 flex-grow min-h-[250px]">
+        {intelFeed.length > 0 ? (
+            <ul>
+                {intelFeed.map((item, index) => (
+                    <li key={index} className="flex gap-4 my-5">
+                        {/* Icon and Timeline line */}
+                        <div className="flex flex-col items-center">
+                            <span className={`flex items-center justify-center w-8 h-8 rounded-full ${item.type === 'reminder' ? 'bg-yellow-800/50 text-yellow-300' : 'bg-blue-800/50 text-blue-300'}`}>
+                                {item.type === 'reminder' ? '💡' : '🎟️'}
+                            </span>
+                            {index < intelFeed.length - 1 && <div className="w-px h-full bg-gray-700 mt-2"></div>}
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1">
+                            {item.type === 'reminder' ? (
+                                <>
+                                    <p className="font-semibold text-gray-100">Admin Reminder</p>
+                                    <p className="text-sm text-gray-300">{item.message}</p>
+                                </>
+                            ) : (
+                                <>
+                                    <p className="font-semibold text-gray-100">Support Request</p>
+                                    <p className="text-sm text-gray-300 my-1 p-2 bg-gray-900 rounded border border-gray-700 italic">"{item.text}"</p>
+                                    <span className={`text-xs px-2 py-0.5 rounded-full ${item.status === 'Resolved' ? 'bg-green-800/50 text-green-300' : 'bg-yellow-800/50 text-yellow-300'}`}>
+                                        {item.status}
+                                    </span>
+                                </>
+                            )}
+                            <p className="text-xs text-gray-500 mt-1">{item.timestamp.toLocaleString()}</p>
+                        </div>
+                    </li>
+                ))}
+            </ul>
+        ) : (
+            <div className="text-center text-gray-500 pt-16">
+                <span className="text-4xl">📭</span>
+                <p className="mt-2 font-semibold">The log is empty</p>
+                <p className="text-sm">There are no new events to display.</p>
+            </div>
+        )}
+    </div>
+</div>
                             </div>
 
                         </div>
