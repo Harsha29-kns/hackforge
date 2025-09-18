@@ -11,6 +11,7 @@ import AdminControls from './AdminControls'
 import Landing from './Landing';
 import GameLeaderboard from './GameLeaderboard';
 import JudgeLeaderboard from './JudgeLeaderboard';
+import TeamLoginStatus from './TeamLoginStatus';
 
 function App() {
     return (
@@ -26,6 +27,7 @@ function App() {
         <Route path='/admin-controls' element={<AdminControls />} />
         <Route path='/game-leaderboard' element={<GameLeaderboard />} />
         <Route path='/judge-leaderboard' element={<JudgeLeaderboard />} />
+        <Route path="/team-status" element={<TeamLoginStatus />} />
       </Routes>           
     );
 }

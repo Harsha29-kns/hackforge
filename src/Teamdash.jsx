@@ -7,6 +7,7 @@ import Modal from 'react-modal';
 import MemoryFlipGame from "./MemoryFlipGame"; //game file
 import NumberPuzzleGame from "./NumberPuzzleGame"; // Import the NumberPuzzleGame component
 import StopTheBarGame from "./StopTheBarGame";
+import { useNavigate } from "react-router-dom";
 
 // Import your images
 import lod from "/public/loading.gif";
@@ -97,7 +98,7 @@ function CountdownTimer({ targetTime, onTimerEnd }) {
 }
 
 
-// +++++++++++++ START: NEW ATTENDANCE MODAL +++++++++++++
+
 const AttendanceModal = ({ isOpen, onClose, team, attendanceIcon }) => {
     const getAttendanceStatus = (member, round) => member?.attendance?.find(a => a.round === round)?.status || null;
     const rounds = [1, 2, 3, 4, 5, 6, 7];
@@ -187,7 +188,7 @@ const customModalStyles2 = {
     background: '#1f2937', 
     border: '1px solid #4b5563',
     borderRadius: '0.75rem', // rounded-lg
-    // We will control padding via Tailwind on the container inside
+    
     padding: '1.5rem', // p-6, a base padding for the content
   },
   overlay: {
@@ -226,7 +227,7 @@ const ConfirmModal = ({ isOpen, onClose, onConfirm, isSubmitting, title, childre
                                         </div>
                                          </Modal>
                                          );
-};
+                                     };
 
 
 
@@ -322,7 +323,7 @@ const DomainSelectionModal = ({ isOpen, onClose, isSubmitting, selectedSet, doma
                                     <h3 className="font-bold text-lg mb-1 text-slate-100">{domain.name}</h3>
                                     <p className="text-sm text-slate-300 leading-relaxed">{domain.description}</p>
                                 </div>
-                                <SlotProgressBar slots={domain.slots} total={10} />
+                                <SlotProgressBar slots={domain.slots} total={5} />
                             </div>
                         ))}
                     </div>
@@ -355,7 +356,7 @@ const GameModal = ({ isOpen, onClose, onGameEnd, isSubmitting }) => (
     </Modal>
 );
 
-// +++++++++++++ START: NEW ATTENDANCE INFO COMPONENT +++++++++++++
+
 const AttendanceInfo = ({ onOpenModal }) => {
     return (
         <div className="bg-black/20 rounded-lg border border-gray-700/50 p-6 flex flex-col items-center">
@@ -379,15 +380,14 @@ const AttendanceInfo = ({ onOpenModal }) => {
         </div>
     );
 };
-// +++++++++++++ END: NEW ATTENDANCE INFO COMPONENT +++++++++++++
+
 
 
 function Teamdash() {
     // --- STATE AND LOGIC ---
     const [pass, setPass] = useState("");
-    const [teamName, setTeamName] = useState(""); // ✨ NEW: State for team name input
-    const [isLoginVisible, setIsLoginVisible] = useState(false); // ✨ NEW: State for login animation
-    const [team, setTeam] = useState(null);
+    const [teamName, setTeamName] = useState(""); 
+    const [isLoginVisible, setIsLoginVisible] = useState(false);
     const [DomainOpen, setDomainOpen] = useState(false);
     const [domainOpenTime, setDomainOpenTime] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -422,6 +422,8 @@ function Teamdash() {
     const [isBarGameOpen, setIsBarGameOpen] = useState(false);
     const [barGameOpenTime, setBarGameOpenTime] = useState(null);
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+    const [logoutMessage, setLogoutMessage] = useState('');
+    const nav = useNavigate();
 
     //const handleDomainTimerEnd = useCallback(() => {
     //setDomainOpen(true);
@@ -484,7 +486,7 @@ function Teamdash() {
                 socket.off('login:error');
             });
     };
-    // +++ END: MODIFIED verify FUNCTION +++
+    
     const refreshTeamData = async () => {
         const token = localStorage.getItem("token");
         if (!token) {
@@ -659,6 +661,16 @@ function Teamdash() {
                 setIsBarGameOpen(true);
             }
         };
+        const handleForceLogout = (data) => {
+            setLogoutMessage(data.message);
+            setTimeout(() => {
+                handleLogout(); 
+                nav('/teamlogin'); 
+                // Clear the message after navigation to prevent it from reappearing
+                setLogoutMessage(''); 
+            }, 3000); 
+        };
+        socket.on('forceLogout', handleForceLogout);
 
 
         // Set up all in-app listeners
@@ -684,8 +696,9 @@ function Teamdash() {
             socket.off("gameStatusUpdate", handleGameStatusUpdate);
             socket.off("puzzleStatusUpdate", handlePuzzleStatusUpdate);
             socket.off("stopTheBarStatusUpdate", handleStopTheBarStatusUpdate);
+            socket.off('forceLogout', handleForceLogout);
         };
-    }, [team, domainOpenTime, gameOpenTime, puzzleOpenTime, barGameOpenTime]); // Dependency on 'team' ensures this effect runs after a successful login.
+    }, [team, domainOpenTime, gameOpenTime, puzzleOpenTime, barGameOpenTime]); 
     const handleBarGameEnd = async (score) => {
         if (!team || team.stopTheBarPlayed) return;
         setIsSubmittingBarScore(true);
@@ -715,13 +728,14 @@ function Teamdash() {
     const handleSetClick = (set) => { setSelectedSet(set); setIsDomainModalOpen(true); setIsDomainListLoading(true); socket.emit("client:getDomains", ""); };
 
     const handleLogout = () => {
-        // Also inform the server we are logging out to release the lock immediately
+        
         if (team) {
             socket.emit('team:logout');
         }
         localStorage.removeItem("token");
         setTeam(null);
         setIsLoginVisible(true);
+        setLogoutMessage('');
     };
 
     const attendanceIcon = (status) => {
@@ -775,7 +789,7 @@ function Teamdash() {
     };
 
 
-    // ✨ NEW LOGIN PAGE: A redesigned, more engaging login screen with new animations and fields.
+    
     if (!team && !loading) {
         return (
             <div className="min-h-screen flex flex-col justify-center items-center text-white p-4 font-sans overflow-hidden">
@@ -847,7 +861,7 @@ function Teamdash() {
         ? DomainData.find(ps => ps.name === team.Domain)
         : null;
 
-    // --- EVENT DATA ---
+    
 
     const attendanceRounds = [
         { round: 1, time: '09:30 AM' },
@@ -864,6 +878,14 @@ function Teamdash() {
     return (
         <div className="min-h-screen text-gray-200 font-sans bg-gray-900" style={{ backgroundImage: `url('https://www.pixelstalk.net/wp-content/uploads/2016/06/Dark-Wallpaper-HD-Desktop.jpg')`, backgroundSize: 'cover', backgroundAttachment: 'fixed' }}>
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+            {logoutMessage && (
+                <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
+                    <div className="bg-gray-800 border border-orange-500 text-white p-8 rounded-lg shadow-lg text-center">
+                        <h2 className="text-2xl font-bold mb-4 font-naruto text-orange-400">Forced Logout</h2>
+                        <p className="text-lg">{logoutMessage}</p>
+                    </div>
+                </div>
+            )}
             <ConfirmModal
             isOpen={isConfirmModalOpen}
             onClose={() => setIsConfirmModalOpen(false)}
@@ -871,7 +893,7 @@ function Teamdash() {
             isSubmitting={isSubmittingDomain}
             title="Final Confirmation"
         >
-            <p>You have selected the domain:</p>
+            <p>You have selected the Problem Statement:</p>
             <p className="text-xl font-bold text-orange-400 my-2 text-center">
                 {DomainData.find(d => d.id === selectedDomain)?.name || "Unknown"}
             </p>
@@ -965,11 +987,11 @@ function Teamdash() {
                                 <div className="space-y-3 overflow-y-auto pr-2">
                                     <div className="flex items-center justify-between p-3 bg-yellow-500/10 rounded-lg">
                                         <div className="flex items-center gap-3">
-                                            {/* ===== FIX STARTS HERE ===== */}
+                                            {/* name */}
                                             <span className="w-9 h-9 flex-shrink-0 flex items-center justify-center bg-orange-500/20 rounded-full font-bold">
                                                 {team.name && team.name.trim().charAt(0)}
                                             </span>
-                                            {/* ===== FIX ENDS HERE ===== */}
+                                            {/* lead name */}
                                             <div>
                                                 <p className="font-bold text-yellow-300">{team.name}</p>
                                                 <p className="text-xs text-yellow-400/70">{team.registrationNumber}</p>
@@ -980,11 +1002,11 @@ function Teamdash() {
                                     {team.teamMembers.map((member, i) => (
                                         <div key={i} className="flex items-center justify-between p-3 bg-gray-800/60 rounded-lg">
                                             <div className="flex items-center gap-3">
-                                                {/* ===== FIX STARTS HERE ===== */}
+                                                {/* ===== mem name ===== */}
                                                 <span className="w-9 h-9 flex-shrink-0 flex items-center justify-center bg-orange-500/20 rounded-full font-bold">
                                                     {member.name && member.name.trim().charAt(0)}
                                                 </span>
-                                                {/* ===== FIX ENDS HERE ===== */}
+                                                {/* ===== mem name ===== */}
                                                 <div> <p className="font-semibold">{member.name}</p> <p className="text-xs text-gray-400">{member.registrationNumber}</p> </div>
                                             </div>
                                             {member.qrCode && ( <button onClick={() => setViewingQr({ url: member.qrCode, name: member.name })} className="bg-white p-1 rounded-md hover:scale-110 transition-transform"> <img src={member.qrCode} alt="QR Code" className="w-12 h-12"/> </button> )}

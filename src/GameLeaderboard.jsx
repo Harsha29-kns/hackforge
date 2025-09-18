@@ -4,6 +4,7 @@ import api from "./api";
 import { io } from "socket.io-client"; 
 import king from "/public/king.png";
 
+
 const socket = io(api);
 
 // --- Helper component for the main list ---

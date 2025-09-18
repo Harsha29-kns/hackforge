@@ -9,6 +9,7 @@ import Papa from "papaparse";
 import JSZip from 'jszip';
 import { Gem, ArrowLeft, ArrowRight } from "lucide-react";
 
+
 const socket = io(api);
 
 
@@ -722,7 +723,7 @@ function Admin() {
                             ))}
                         </div>
                         <div style={{ textAlign: 'center', marginTop: '2.5rem', color: '#718096', fontSize: '0.875rem' }}>
-                            <p>ANY ISSUES CONTACT 7671084221</p>
+                            
                             <p>This pass must be presented for entry and attendance verification.</p>
                             <p>&copy; 2025 Scorecraft KARE</p>
                         </div>
