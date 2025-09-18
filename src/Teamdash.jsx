@@ -699,7 +699,7 @@ function Teamdash() {
             socket.off("stopTheBarStatusUpdate", handleStopTheBarStatusUpdate);
             socket.off('forceLogout', handleForceLogout);
         };
-    }, [team, domainOpenTime, gameOpenTime, puzzleOpenTime, barGameOpenTime]); // Dependency on 'team' ensures this effect runs after a successful login.
+    }, [team, domainOpenTime, gameOpenTime, puzzleOpenTime, barGameOpenTime]); 
     const handleBarGameEnd = async (score) => {
         if (!team || team.stopTheBarPlayed) return;
         setIsSubmittingBarScore(true);
