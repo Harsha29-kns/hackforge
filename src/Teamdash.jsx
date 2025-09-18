@@ -227,7 +227,7 @@ const ConfirmModal = ({ isOpen, onClose, onConfirm, isSubmitting, title, childre
                                         </div>
                                          </Modal>
                                          );
-                                     };
+};
 
 
 
@@ -386,8 +386,9 @@ const AttendanceInfo = ({ onOpenModal }) => {
 function Teamdash() {
     // --- STATE AND LOGIC ---
     const [pass, setPass] = useState("");
-    const [teamName, setTeamName] = useState(""); 
-    const [isLoginVisible, setIsLoginVisible] = useState(false);
+    const [teamName, setTeamName] = useState(""); // ✨ NEW: State for team name input
+    const [isLoginVisible, setIsLoginVisible] = useState(false); // ✨ NEW: State for login animation
+    const [team, setTeam] = useState(null);
     const [DomainOpen, setDomainOpen] = useState(false);
     const [domainOpenTime, setDomainOpenTime] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -698,7 +699,7 @@ function Teamdash() {
             socket.off("stopTheBarStatusUpdate", handleStopTheBarStatusUpdate);
             socket.off('forceLogout', handleForceLogout);
         };
-    }, [team, domainOpenTime, gameOpenTime, puzzleOpenTime, barGameOpenTime]); 
+    }, [team, domainOpenTime, gameOpenTime, puzzleOpenTime, barGameOpenTime]); // Dependency on 'team' ensures this effect runs after a successful login.
     const handleBarGameEnd = async (score) => {
         if (!team || team.stopTheBarPlayed) return;
         setIsSubmittingBarScore(true);
