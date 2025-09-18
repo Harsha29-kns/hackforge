@@ -5,18 +5,18 @@ import { io } from "socket.io-client";
 
 // --- NEW RUBRICS ---
 const firstReviewRubric = {
-    visionArchitecture: { criteria: "Vision, Architecture & Planning", marks: "", max: 15 },
-    coreFunctionality: { criteria: "Core Functionality & Progress", marks: "", max: 15 },
-    technicalFoundation: { criteria: "Technical Foundation & Best Practices", marks: "", max: 10 },
-    communicationProblemSolving: { criteria: "Communication & Problem Solving", marks: "", max: 10 },
+    IdeaPlanning: { criteria: "Idea & Planning", marks: "", max: 15 },
+    coreFunctionality: { criteria: "Main Features & Progress", marks: "", max: 15 },
+    technicalFoundation: { criteria: "Technical Quality", marks: "", max: 10 },
+    communicationProblemSolving: { criteria: "Teamwork & Problem Solving", marks: "", max: 10 },
 };
 
 const secondReviewRubric = {
     innovationImpact: { criteria: "Innovation & Impact", marks: "", max: 10 },
     finalPresentationDemo: { criteria: "Final Presentation & Live Demo", marks: "", max: 10 },
-    businessViability: { criteria: "Business Viability & Future Scope", marks: "", max: 10 },
-    projectCompletion: { criteria: "Project Completion & Functionality", marks: "", max: 10 },
-    easeOfUse: { criteria: "Ease of Use (Intuitive flow, user-friendly forms)", marks: "", max: 10 },
+    businessViability: { criteria: "Real-World Use & Future Scope", marks: "", max: 10 },
+    projectCompletion: { criteria: "Completion & Functionality", marks: "", max: 10 },
+    easeOfUse: { criteria: "User Experience", marks: "", max: 10 },
 };
 
 

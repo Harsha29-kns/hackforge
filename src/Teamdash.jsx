@@ -802,6 +802,11 @@ function Teamdash() {
                             <img src={hackforge} className="h-20 mx-auto mb-4" alt="Hackforge Logo" />
                             <h1 className="text-3xl font-bold font-naruto tracking-wider text-orange-400">Team Login</h1>
                             <p className="text-gray-400 mt-2">Welcome to the Arena</p>
+                            <div className="mt-6 bg-orange-500/10 border border-orange-400/30 text-orange-300 text-sm rounded-lg p-3">
+                                <p className="font-semibold">Note:</p>
+                                <p className="mt-1">Login access is restricted to <span className="font-medium">Team Leads only</span>.</p>
+                                <p>Each account can log in for <span className="font-medium">one device only</span>.</p>
+                            </div>
                         </div>
 
                         {error && (
