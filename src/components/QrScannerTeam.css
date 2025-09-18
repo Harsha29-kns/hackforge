@@ -1,0 +1,138 @@
+/* Main container for the entire scanner page */
+.scanner-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #f0f2f5;
+    padding: 20px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* The main card holding the content */
+.scanner-card {
+    background-color: white;
+    padding: 30px;
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 450px;
+    text-align: center;
+    box-sizing: border-box;
+}
+
+.scanner-title {
+    margin-top: 0;
+    margin-bottom: 10px; /* Adjusted margin */
+    color: #333;
+    font-size: 1.8rem;
+}
+
+/* New style for the instruction text */
+.instructions {
+    margin-top: 0;
+    margin-bottom: 25px;
+    color: #666;
+    font-size: 1rem;
+    font-style: italic;
+}
+
+/* Wrapper for the QR reader to position the overlay */
+.scanner-wrapper {
+    position: relative;
+    width: 100%;
+    padding-top: 100%; /* Creates a square aspect ratio */
+    overflow: hidden;
+    border-radius: 12px;
+    background: #eee;
+}
+
+.qr-reader {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Stylish overlay and scanning line animation */
+.scanner-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 50px solid rgba(0, 0, 0, 0.3);
+    box-sizing: border-box;
+}
+
+.scanner-line {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: #007bff;
+    box-shadow: 0 0 10px #007bff;
+    animation: scan 2s infinite linear;
+}
+
+@keyframes scan {
+    0% { top: 0; }
+    100% { top: 100%; }
+}
+
+/* Result display section */
+.result-container {
+    margin-top: 20px;
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.result-title {
+    color: #007bff;
+    margin-bottom: 15px;
+}
+
+.result-info {
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+    margin-bottom: 20px;
+    text-align: left;
+    font-size: 1.1rem;
+}
+
+.result-info p {
+    margin: 10px 0;
+}
+
+/* Error and button styling */
+.error-message {
+    color: #dc3545;
+    margin-top: 15px;
+    font-weight: 500;
+}
+
+.scan-again-button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.2s;
+}
+
+.scan-again-button:hover {
+    background-color: #0056b3;
+    transform: scale(1.05);
+}

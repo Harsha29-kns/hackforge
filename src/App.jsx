@@ -12,6 +12,7 @@ import Landing from './Landing';
 import GameLeaderboard from './GameLeaderboard';
 import JudgeLeaderboard from './JudgeLeaderboard';
 import TeamLoginStatus from './TeamLoginStatus';
+import QrScannerTeam from './components/QrScannerTeam';
 
 function App() {
     return (
@@ -28,6 +29,7 @@ function App() {
         <Route path='/game-leaderboard' element={<GameLeaderboard />} />
         <Route path='/judge-leaderboard' element={<JudgeLeaderboard />} />
         <Route path="/team-status" element={<TeamLoginStatus />} />
+        <Route path="/team-qr-scanner" element={<QrScannerTeam />} /> 
       </Routes>           
     );
 }
