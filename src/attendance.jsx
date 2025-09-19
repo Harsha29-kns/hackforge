@@ -165,9 +165,9 @@ function Attd() {
     const round = params.get("round") || "1";
 
     const sectorPasswords = {
-        Naruto: "att2025-naruto",
-        Sasuke: "att2025-sasuke",
-        Itachi: "att2025-itachi",
+        Naruto: "score2025",
+        Sasuke: "hackforge",
+        Itachi: "clubscore",
     };
 
     useEffect(() => {

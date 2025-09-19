@@ -68,7 +68,7 @@ function Review() {
     
     useEffect(() => {
         const storedPassword = sessionStorage.getItem("judgePassword");
-        if (storedPassword === "judge1" || storedPassword === "judge2") {
+        if (storedPassword === "csescorehack1" || storedPassword === "csescorehack2") {
             setIsAuthenticated(true);
             setJudge(storedPassword);
         }
@@ -120,7 +120,7 @@ function Review() {
 
     const handleLogin = (e) => {
         e.preventDefault();
-        if (password === "judge1" || password === "judge2") {
+        if (password === "csescorehack1" || password === "csescorehack2") {
             setIsAuthenticated(true);
             setJudge(password);
             sessionStorage.setItem("judgePassword", password);
@@ -303,7 +303,7 @@ function Review() {
                          </div>
                          <div className="text-center">
                             <h2 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">
-                                {judge === 'judge1' ? "Judge 1 Terminal" : "Judge 2 Terminal"}
+                                {judge === 'csescorehack1' ? "Judge 1 Terminal" : "Judge 2 Terminal"}
                             </h2>
                          </div>
                         <button onClick={handleLogout} className="flex items-center gap-2 px-4 py-2 bg-red-600/80 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors">
