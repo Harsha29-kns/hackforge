@@ -22,16 +22,23 @@
     color: #f3f4f6; /* text-gray-100 */
 }
 
-
 /* --- Styling the html5-qrcode-scanner library's elements --- */
+
+/* Keyframes for the pulsing border animation */
+@keyframes pulse-border {
+  0% { border-color: #fb923c; } /* orange-400 */
+  50% { border-color: #6b7280; } /* gray-500 */
+  100% { border-color: #fb923c; } /* orange-400 */
+}
 
 /* The main container for the scanner video feed */
 #reader {
     width: 100%;
-    border: 2px dashed #4b5563; /* border-gray-600 */
     border-radius: 0.75rem; /* rounded-lg */
     overflow: hidden;
     background-color: #000;
+    border: 3px dashed #fb923c;
+    animation: pulse-border 2.5s infinite;
 }
 
 /* The video element itself */
@@ -41,20 +48,42 @@
     display: block;
 }
 
-/* --- Hiding unwanted elements from the library --- */
-
-/* Hide the "Scan an image file" link/button */
+/* Hide unwanted elements from the library */
 #reader__dashboard_section_swaplink,
 #reader__filescan_input {
     display: none !important;
 }
 
-/* Styling the "Select Camera" dropdown if multiple cameras are present */
+/* Style the "Request Camera Permissions" button */
+#reader__dashboard_section_permission button {
+  background-color: #ea580c; /* orange-600 */
+  color: white;
+  font-weight: bold;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin: 1rem 0;
+  /* --- BORDER ADDED HERE --- */
+  border: 2px solid rgba(251, 146, 60, 0.8); /* border-orange-400 with 80% opacity */
+}
+#reader__dashboard_section_permission button:hover {
+  background-color: #c2410c; /* orange-700 */
+}
+
+
+/* Style the camera selection dropdown */
 #reader__dashboard_section_csr select {
-    background-color: #374151; /* bg-gray-700 */
-    border: 1px solid #4b5563; /* border-gray-600 */
-    color: white;
-    padding: 0.5rem;
-    border-radius: 0.5rem;
-    margin-top: 0.5rem;
+  background-color: #1f2937; /* bg-gray-800 */
+  border: 2px solid #4b5563; /* border-gray-600 */
+  color: white;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  margin-top: 0.5rem;
+  font-weight: 500;
+  width: 100%;
+}
+#reader__dashboard_section_csr select:focus {
+    border-color: #fb923c; /* orange-400 */
+    outline: none;
 }

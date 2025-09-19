@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-// --- CHANGE 1: Import Html5QrcodeScanType directly ---
 import { Html5QrcodeScanner, Html5QrcodeScanType } from 'html5-qrcode';
 import { QrCode, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
 import './QrScannerTeam.css';
@@ -22,8 +21,8 @@ const QrScannerTeam = () => {
                     height: 250,
                 },
                 fps: 5,
-                // --- CHANGE 2: Use the imported variable, not window.* ---
-                supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]
+                supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
+                facingMode: "environment"
             },
             false
         );
@@ -66,7 +65,6 @@ const QrScannerTeam = () => {
         setShowScanner(true);
     };
 
-    // The JSX (return statement) does not need any changes
     return (
         <div className="qr-scanner-page">
             <div className="scanner-card-modern">
@@ -75,20 +73,29 @@ const QrScannerTeam = () => {
                     <QrCode className="w-12 h-12 text-orange-400 mb-3" />
                     <h1 className="text-2xl font-bold text-white tracking-wider">Team Credential Scanner</h1>
                     <p className="text-gray-400 mt-2">
-                        Please scan the QR code sticker located on your assigned table.
+                        Place the QR code on your table inside the scanning frame below.
                     </p>
                 </div>
 
                 {/* --- SCANNER / RESULT AREA --- */}
                 <div className="mt-6">
-                    {showScanner && <div id="reader"></div>}
+                    {showScanner && (
+                        <>
+                            <div id="reader"></div>
+                            <div className="text-center text-gray-400 text-sm mt-4 p-3 bg-gray-900/50 rounded-md border border-gray-700">
+                                <p>Align the QR code within the frame.</p>
+                                <p>The scan will happen automatically when focused.</p>
+                            </div>
+                        </>
+                    )}
 
                     {error && (
                         <div className="flex flex-col items-center text-center p-4 bg-red-900/50 border border-red-500/50 rounded-lg">
                             <XCircle className="w-10 h-10 text-red-400 mb-3" />
                             <p className="font-semibold text-red-300">Scan Failed</p>
                             <p className="text-sm text-red-400/80 mt-1">{error}</p>
-                            <button onClick={handleScanAgain} className="mt-4 flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-5 rounded-lg transition-colors">
+                            {/* --- BORDER ADDED HERE --- */}
+                            <button onClick={handleScanAgain} className="mt-4 flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-5 rounded-lg transition-colors border-2 border-red-400/80">
                                 <RefreshCw size={16} />
                                 Try Again
                             </button>
@@ -109,7 +116,8 @@ const QrScannerTeam = () => {
                                     <p className="font-mono text-white">{scanResult.password}</p>
                                 </div>
                             </div>
-                            <button onClick={handleScanAgain} className="mt-6 flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-5 rounded-lg transition-colors">
+                            {/* --- BORDER ADDED HERE --- */}
+                            <button onClick={handleScanAgain} className="mt-6 flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-5 rounded-lg transition-colors border-2 border-orange-400/80">
                                 <RefreshCw size={16} />
                                 Scan Another
                             </button>
