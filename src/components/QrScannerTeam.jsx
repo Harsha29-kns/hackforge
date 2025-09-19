@@ -1,87 +1,121 @@
 import React, { useState, useEffect } from 'react';
-import { Html5QrcodeScanner } from 'html5-qrcode';
-import './QrScannerTeam.css'; // We can reuse the same CSS file
+// --- CHANGE 1: Import Html5QrcodeScanType directly ---
+import { Html5QrcodeScanner, Html5QrcodeScanType } from 'html5-qrcode';
+import { QrCode, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
+import './QrScannerTeam.css';
 
 const QrScannerTeam = () => {
-    const [teamInfo, setTeamInfo] = useState(null);
-    const [error, setError] = useState(null);
+    const [scanResult, setScanResult] = useState(null);
+    const [error, setError] = useState('');
     const [showScanner, setShowScanner] = useState(true);
 
     useEffect(() => {
-        if (!showScanner) return; // Only run the scanner when it's shown
+        if (!showScanner) {
+            return;
+        }
 
         const scanner = new Html5QrcodeScanner(
-            'qr-reader-container', // ID of the container element
+            'reader',
             {
                 qrbox: {
                     width: 250,
                     height: 250,
                 },
-                fps: 10, // Frames per second
+                fps: 5,
+                // --- CHANGE 2: Use the imported variable, not window.* ---
+                supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]
             },
-            false // verbose = false
+            false
         );
 
         const onScanSuccess = (decodedText) => {
+            setShowScanner(false);
             try {
-                const parsedData = JSON.parse(decodedText);
-                if (parsedData.teamname && parsedData.password) {
-                    setTeamInfo(parsedData);
-                    setError(null);
-                    setShowScanner(false);
-                    scanner.clear(); // Stop the scanner
+                const data = JSON.parse(decodedText);
+                if (data.teamname && data.password) {
+                    setScanResult(data);
+                    setError('');
                 } else {
-                    setError("Invalid QR code format.");
+                    setError('Invalid QR Code format.');
+                    setScanResult(null);
                 }
             } catch (err) {
-                setError("Could not parse the QR code.");
+                setError('Failed to parse QR code data.');
+                setScanResult(null);
             }
         };
 
-        const onScanError = (errorMessage) => {
-            // This function is called frequently, so we don't set errors here
-            // console.warn(`QR error: ${errorMessage}`);
+        const onScanFailure = (err) => {
+            // Intentionally left blank
         };
 
-        scanner.render(onScanSuccess, onScanError);
+        scanner.render(onScanSuccess, onScanFailure);
 
-        // Cleanup function to stop the scanner when the component unmounts
         return () => {
-            if (scanner) {
-                scanner.clear().catch(err => console.error("Failed to clear scanner", err));
+            if (scanner && typeof scanner.clear === 'function') {
+                scanner.clear().catch(err => {
+                    console.error("Error cleaning up scanner:", err);
+                });
             }
         };
-    }, [showScanner]); // Rerun effect if showScanner changes
+    }, [showScanner]);
 
-    const scanAgain = () => {
-        setTeamInfo(null);
-        setError(null);
+    const handleScanAgain = () => {
+        setScanResult(null);
+        setError('');
         setShowScanner(true);
     };
 
+    // The JSX (return statement) does not need any changes
     return (
-        <div className="scanner-container">
-            <div className="scanner-card">
-                <h2 className="scanner-title">Team QR Scanner</h2>
-                <p className="instructions">Please scan the QR Code located on your assigned desk.</p>
+        <div className="qr-scanner-page">
+            <div className="scanner-card-modern">
+                {/* --- HEADER --- */}
+                <div className="flex flex-col items-center text-center pb-6 border-b border-gray-700">
+                    <QrCode className="w-12 h-12 text-orange-400 mb-3" />
+                    <h1 className="text-2xl font-bold text-white tracking-wider">Team Credential Scanner</h1>
+                    <p className="text-gray-400 mt-2">
+                        Please scan the QR code sticker located on your assigned table.
+                    </p>
+                </div>
 
-                {/* The container for the QR Scanner */}
-                {showScanner && <div id="qr-reader-container"></div>}
+                {/* --- SCANNER / RESULT AREA --- */}
+                <div className="mt-6">
+                    {showScanner && <div id="reader"></div>}
 
-                {error && <p className="error-message">{error}</p>}
-
-                {teamInfo && (
-                    <div className="result-container">
-                        <h3 className="result-title">Team Credentials</h3>
-                        <div className="result-info">
-                            <p><strong>Team Name:</strong> {teamInfo.teamname}</p>
-                            <p><strong>Password:</strong> {teamInfo.password}</p>
+                    {error && (
+                        <div className="flex flex-col items-center text-center p-4 bg-red-900/50 border border-red-500/50 rounded-lg">
+                            <XCircle className="w-10 h-10 text-red-400 mb-3" />
+                            <p className="font-semibold text-red-300">Scan Failed</p>
+                            <p className="text-sm text-red-400/80 mt-1">{error}</p>
+                            <button onClick={handleScanAgain} className="mt-4 flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-5 rounded-lg transition-colors">
+                                <RefreshCw size={16} />
+                                Try Again
+                            </button>
                         </div>
-                        <button onClick={scanAgain} className="scan-again-button">
-                            Scan Another Code
-                        </button>
-                    </div>
-                )}
+                    )}
+
+                    {scanResult && (
+                        <div className="flex flex-col items-center text-center p-4 bg-green-900/50 border border-green-500/50 rounded-lg">
+                            <CheckCircle className="w-10 h-10 text-green-400 mb-3" />
+                            <h2 className="text-xl font-semibold text-green-300">Scan Successful!</h2>
+                            <div className="w-full bg-gray-900/60 p-4 rounded-md mt-4 text-left space-y-2">
+                                <div>
+                                    <p className="text-xs text-gray-400">Team Name</p>
+                                    <p className="font-mono text-white">{scanResult.teamname}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-gray-400">Access Code</p>
+                                    <p className="font-mono text-white">{scanResult.password}</p>
+                                </div>
+                            </div>
+                            <button onClick={handleScanAgain} className="mt-6 flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-5 rounded-lg transition-colors">
+                                <RefreshCw size={16} />
+                                Scan Another
+                            </button>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );
