@@ -323,7 +323,7 @@ const DomainSelectionModal = ({ isOpen, onClose, isSubmitting, selectedSet, doma
                                     <h3 className="font-bold text-lg mb-1 text-slate-100">{domain.name}</h3>
                                     <p className="text-sm text-slate-300 leading-relaxed">{domain.description}</p>
                                 </div>
-                                <SlotProgressBar slots={domain.slots} total={5} />
+                                <SlotProgressBar slots={domain.slots} total={4} />
                             </div>
                         ))}
                     </div>
@@ -679,7 +679,7 @@ function Teamdash() {
             setLogoutMessage(data.message);
             setTimeout(() => {
                 handleLogout(); 
-                nav('/teamlogin'); 
+                nav('/teamdash'); 
                 // Clear the message after navigation to prevent it from reappearing
                 setLogoutMessage(''); 
             }, 3000); 
@@ -1082,9 +1082,8 @@ function Teamdash() {
                                         DomainOpen ? (
                                             [...new Set(DomainData.map(item => item.set))].length > 0 ? (
                                                 <div className="flex gap-2 justify-center">
-                                                    {[...new Set(DomainData.map(item => item.set))].sort().map(set => (
-                                                        <button key={set} onClick={() => handleSetClick(set)} className="w-full py-3 bg-orange-600 hover:bg-orange-700 rounded-lg font-bold">Choose {set}</button>
-                                                    ))}
+                                                    <button onClick={() => handleSetClick("Set 1")} className="w-full py-3 bg-orange-600 hover:bg-orange-700 rounded-lg font-bold">AI/ML set</button>
+                                                    <button onClick={() => handleSetClick("Set 2")} className="w-full py-3 bg-orange-600 hover:bg-orange-700 rounded-lg font-bold">Full-stack set</button>
                                                 </div>
                                             ) : (
                                                 <p className="text-center text-gray-400 animate-pulse">Loading statements sets...</p>
