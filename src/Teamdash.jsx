@@ -1082,8 +1082,8 @@ function Teamdash() {
                                         DomainOpen ? (
                                             [...new Set(DomainData.map(item => item.set))].length > 0 ? (
                                                 <div className="flex gap-2 justify-center">
-                                                    <button onClick={() => handleSetClick("Set 1")} className="w-full py-3 bg-orange-600 hover:bg-orange-700 rounded-lg font-bold">AI/ML set</button>
-                                                    <button onClick={() => handleSetClick("Set 2")} className="w-full py-3 bg-orange-600 hover:bg-orange-700 rounded-lg font-bold">Full-stack set</button>
+                                                    <button onClick={() => handleSetClick("Set 1")} className="w-full py-3 bg-orange-600 hover:bg-orange-700 rounded-lg font-bold">Campus Community Problem Statements</button>
+                                                    <button onClick={() => handleSetClick("Set 2")} className="w-full py-3 bg-orange-600 hover:bg-orange-700 rounded-lg font-bold">Lifestyle & Productivity Problem Statements</button>
                                                 </div>
                                             ) : (
                                                 <p className="text-center text-gray-400 animate-pulse">Loading statements sets...</p>
