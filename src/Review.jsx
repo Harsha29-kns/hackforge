@@ -5,18 +5,17 @@ import { io } from "socket.io-client";
 
 // --- NEW RUBRICS ---
 const firstReviewRubric = {
-    IdeaPlanning: { criteria: "Idea & Planning", marks: "", max: 15 },
-    coreFunctionality: { criteria: "Main Features & Progress", marks: "", max: 15 },
-    technicalFoundation: { criteria: "Technical Quality", marks: "", max: 10 },
-    communicationProblemSolving: { criteria: "Teamwork & Problem Solving", marks: "", max: 10 },
+    Design: { criteria: "UI/UX Design", marks: "", max: 15 },
+    Technical: { criteria: "Technical Depth", marks: "", max: 15 },
+    Progress: { criteria: "Progress & Team Effort", marks: "", max: 20 },
 };
 
 const secondReviewRubric = {
-    innovationImpact: { criteria: "Innovation & Impact", marks: "", max: 10 },
-    finalPresentationDemo: { criteria: "Final Presentation & Live Demo", marks: "", max: 10 },
-    businessViability: { criteria: "Real-World Use & Future Scope", marks: "", max: 10 },
-    projectCompletion: { criteria: "Completion & Functionality", marks: "", max: 10 },
-    easeOfUse: { criteria: "User Experience", marks: "", max: 10 },
+    functionality: { criteria: "End-to-End Functionality", marks: "", max: 15 },
+    preformance: { criteria: "Scalability & Performance", marks: "", max: 10 },
+    UseCase: { criteria: "Real-World Impact & Use Case", marks: "", max: 10 },
+    Demo: { criteria: "Demo Quality & Communication", marks: "", max: 10 },
+    extension: { criteria: "Innovation & Extension", marks: "", max: 5 },
 };
 
 
