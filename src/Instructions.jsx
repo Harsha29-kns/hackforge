@@ -131,12 +131,12 @@ function Instructions() {
                         <p><strong>Keep it Ready:</strong> Have your QR code accessible on your mobile device at all times for quick scanning by the organizers.</p>
                     </Section>
 
-                    {/* --- UPDATED DOMAIN SELECTION SECTION --- */}
-                    <Section icon={<Layers size={32} />} title="Domain & Problem Selection">
-                        <p><strong>Explore the Sets:</strong> Domains are grouped into 3 distinct sets. Your team lead can select any set to view its problem statements.</p>
+                    {/* --- UPDATED Problem Statements SELECTION SECTION --- */}
+                    <Section icon={<Layers size={32} />} title="Problem Statements Selection">
+                        <p><strong>Explore the Sets:</strong> Problem Statements are grouped into 2 distinct sets. Your team lead can select any set to view its problem statements.</p>
                         <p><strong>Review Problem Statements:</strong> Inside a set, you can browse through the available problem statements. Take your time to choose the one that best fits your team's skills.</p>
                         <p><strong>Flexible Choice:</strong> If you're not satisfied with the problems in one set, simply click 'Cancel' to return and explore a different set.</p>
-                        <p><strong>Confirm Your Mission:</strong> Once you've chosen a problem statement and click 'Confirm', your domain and problem are locked in. This choice is final!</p>
+                        <p><strong>Confirm Your Mission:</strong> Once you've chosen a problem statement and click 'Confirm', your problem statement are locked in. This choice is final!</p>
                     </Section>
 
                     <Section icon={<Gamepad2 size={32} />} title="Side-Quest Game Rules">
@@ -161,7 +161,7 @@ function Instructions() {
                                 textShadow: "0px 0px 8px rgba(255, 255, 255, 0.7)",
                             }}
                             whileTap={{ scale: 0.95 }}
-                            onClick={() => nav("/home")}
+                            onClick={() => nav("/teamdash")}
                         >
                             Proceed to Team Login
                         </motion.button>
