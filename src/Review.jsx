@@ -5,9 +5,10 @@ import { io } from "socket.io-client";
 
 // --- NEW RUBRICS ---
 const firstReviewRubric = {
-    Design: { criteria: "UI/UX Design", marks: "", max: 15 },
-    Technical: { criteria: "Technical Depth", marks: "", max: 15 },
-    Progress: { criteria: "Progress & Team Effort", marks: "", max: 20 },
+    Core: { criteria: "Core Functionality", marks: "", max: 20 },
+    UIUX: { criteria: "UI/UX Design", marks: "", max: 10 },
+    Technical: { criteria: "Technical Depth", marks: "", max: 10 },
+    Progress: { criteria: "Progress & Team Effort", marks: "", max: 10 },
 };
 
 const secondReviewRubric = {
